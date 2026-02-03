@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
   TouchableOpacity,
   Alert,
   Switch,
-  Dimensions
+  Dimensions,
+  Modal
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { Colors, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
-import { FadeInDown, FadeInRight } from '../../components/Animations';
+import { FadeInDown } from '../../components/Animations';
 
 const { width } = Dimensions.get('window');
 
@@ -21,31 +22,26 @@ export default function ProfileScreen() {
   const { user, userProfile, logout } = useAuth();
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
-  
-  // Sample study buddies for Module 9
-  const studyBuddies = [
-    { id: 1, name: 'Alex Johnson', subject: 'Mathematics', avatar: '👨‍🎓', online: true },
-    { id: 2, name: 'Sarah Williams', subject: 'Physics', avatar: '👩‍🎓', online: true },
-    { id: 3, name: 'Michael Chen', subject: 'Chemistry', avatar: '👨‍🔬', online: false },
-  ];
-  
+  const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+
   // Quick settings
   const settingsItems = [
     { id: 'notifications', icon: 'notifications-outline', title: 'Notifications', type: 'toggle', value: notifications, onToggle: setNotifications },
     { id: 'darkMode', icon: 'moon-outline', title: 'Dark Mode', type: 'toggle', value: darkMode, onToggle: setDarkMode },
     { id: 'language', icon: 'language-outline', title: 'Language', type: 'arrow', value: 'English' },
-    { id: 'privacy', icon: 'shield-checkmark-outline', title: 'Privacy & Security', type: 'arrow' },
-    { id: 'about', icon: 'information-circle-outline', title: 'About', type: 'arrow' },
+    { id: 'privacy', icon: 'shield-checkmark-outline', title: 'Privacy & Security', type: 'arrow', onPress: () => setShowPrivacyModal(true) },
+    { id: 'about', icon: 'information-circle-outline', title: 'About', type: 'arrow', onPress: () => setShowAboutModal(true) },
   ];
-  
+
   const handleLogout = () => {
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Logout', 
+        {
+          text: 'Logout',
           style: 'destructive',
           onPress: async () => {
             await logout();
@@ -54,6 +50,12 @@ export default function ProfileScreen() {
         },
       ]
     );
+  };
+
+  const handleSettingsPress = (item) => {
+    if (item.onPress) {
+      item.onPress();
+    }
   };
 
   return (
@@ -101,47 +103,8 @@ export default function ProfileScreen() {
           </View>
         </FadeInDown>
 
-        {/* Study Buddies - Module 9 */}
-        <FadeInDown delay={200}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>👥 Study Buddies</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>Find More</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.sectionSubtitle}>Connect with peers for collaborative learning</Text>
-          
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.buddiesScroll}>
-            {studyBuddies.map((buddy, index) => (
-              <FadeInRight key={buddy.id} delay={300 + index * 100}>
-                <TouchableOpacity style={styles.buddyCard}>
-                  <View style={styles.buddyAvatarContainer}>
-                    <View style={styles.buddyAvatar}>
-                      <Text style={styles.buddyAvatarEmoji}>{buddy.avatar}</Text>
-                    </View>
-                    {buddy.online && <View style={styles.onlineIndicator} />}
-                  </View>
-                  <Text style={styles.buddyName}>{buddy.name.split(' ')[0]}</Text>
-                  <Text style={styles.buddySubject}>{buddy.subject}</Text>
-                  <TouchableOpacity style={styles.chatButton}>
-                    <Ionicons name="chatbubble-outline" size={16} color={Colors.primary} />
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              </FadeInRight>
-            ))}
-            {/* Add new buddy card */}
-            <TouchableOpacity style={styles.addBuddyCard}>
-              <View style={styles.addBuddyIcon}>
-                <Ionicons name="person-add" size={24} color={Colors.primary} />
-              </View>
-              <Text style={styles.addBuddyText}>Find Study</Text>
-              <Text style={styles.addBuddyText}>Partners</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </FadeInDown>
-
         {/* Reports - Module 8 */}
-        <FadeInDown delay={300}>
+        <FadeInDown delay={200}>
           <Text style={styles.sectionTitle}>📊 Reports</Text>
           <TouchableOpacity style={styles.reportCard}>
             <View style={styles.reportIcon}>
@@ -170,16 +133,18 @@ export default function ProfileScreen() {
         </FadeInDown>
 
         {/* Settings */}
-        <FadeInDown delay={400}>
+        <FadeInDown delay={300}>
           <Text style={styles.sectionTitle}>⚙️ Settings</Text>
           <View style={styles.settingsCard}>
             {settingsItems.map((item, index) => (
-              <TouchableOpacity 
+              <TouchableOpacity
                 key={item.id}
                 style={[
                   styles.settingsItem,
                   index < settingsItems.length - 1 && styles.settingsItemBorder
                 ]}
+                onPress={() => handleSettingsPress(item)}
+                disabled={item.type === 'toggle'}
               >
                 <View style={styles.settingsItemLeft}>
                   <View style={styles.settingsIcon}>
@@ -206,7 +171,7 @@ export default function ProfileScreen() {
         </FadeInDown>
 
         {/* Logout Button */}
-        <FadeInDown delay={500}>
+        <FadeInDown delay={400}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={20} color={Colors.error} />
             <Text style={styles.logoutButtonText}>Logout</Text>
@@ -219,6 +184,167 @@ export default function ProfileScreen() {
         {/* Bottom spacing */}
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* About Modal */}
+      <Modal
+        visible={showAboutModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAboutModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>About AdaptEd Mind</Text>
+              <TouchableOpacity onPress={() => setShowAboutModal(false)}>
+                <Ionicons name="close" size={24} color={Colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              <View style={styles.aboutLogo}>
+                <Text style={styles.aboutLogoEmoji}>🎓</Text>
+                <Text style={styles.aboutAppName}>AdaptEd Mind</Text>
+                <Text style={styles.aboutVersion}>Version 1.0.0</Text>
+              </View>
+
+              <View style={styles.aboutSection}>
+                <Text style={styles.aboutSectionTitle}>📚 Our Mission</Text>
+                <Text style={styles.aboutText}>
+                  AdaptEd Mind is an AI-powered adaptive learning platform designed to personalize education for every student. We believe that every learner is unique, and our technology adapts to your learning style, pace, and preferences.
+                </Text>
+              </View>
+
+              <View style={styles.aboutSection}>
+                <Text style={styles.aboutSectionTitle}>✨ Key Features</Text>
+                <View style={styles.featureItem}>
+                  <Ionicons name="sparkles" size={18} color={Colors.primary} />
+                  <Text style={styles.featureText}>AI-generated personalized tests</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <Ionicons name="trending-up" size={18} color={Colors.secondary} />
+                  <Text style={styles.featureText}>Real-time progress tracking</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <Ionicons name="people" size={18} color={Colors.accent} />
+                  <Text style={styles.featureText}>Study buddy connections</Text>
+                </View>
+                <View style={styles.featureItem}>
+                  <Ionicons name="play-circle" size={18} color={Colors.error} />
+                  <Text style={styles.featureText}>Curated video lessons</Text>
+                </View>
+              </View>
+
+              <View style={styles.aboutSection}>
+                <Text style={styles.aboutSectionTitle}>👨‍💻 Development Team</Text>
+                <Text style={styles.aboutText}>
+                  Built with ❤️ by passionate developers committed to transforming education through technology.
+                </Text>
+              </View>
+
+              <View style={styles.aboutSection}>
+                <Text style={styles.aboutSectionTitle}>📧 Contact Us</Text>
+                <Text style={styles.aboutText}>
+                  Email: support@adaptedmind.com{'\n'}
+                  Website: www.adaptedmind.com
+                </Text>
+              </View>
+
+              <Text style={styles.copyright}>
+                © 2024 AdaptEd Mind. All rights reserved.
+              </Text>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Privacy & Security Modal */}
+      <Modal
+        visible={showPrivacyModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowPrivacyModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Privacy & Security</Text>
+              <TouchableOpacity onPress={() => setShowPrivacyModal(false)}>
+                <Ionicons name="close" size={24} color={Colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              <View style={styles.privacySection}>
+                <Text style={styles.privacySectionTitle}>🔒 Data Protection</Text>
+                <Text style={styles.privacyText}>
+                  Your data is encrypted and stored securely. We use industry-standard security measures to protect your personal information.
+                </Text>
+              </View>
+
+              <View style={styles.privacySection}>
+                <Text style={styles.privacySectionTitle}>📋 Terms of Service</Text>
+                <Text style={styles.privacyText}>
+                  1. <Text style={styles.boldText}>Account Responsibility:</Text> You are responsible for maintaining the confidentiality of your account credentials.{'\n\n'}
+                  2. <Text style={styles.boldText}>Acceptable Use:</Text> You agree to use AdaptEd Mind for educational purposes only and not engage in any harmful or illegal activities.{'\n\n'}
+                  3. <Text style={styles.boldText}>Content Ownership:</Text> All educational content, including AI-generated tests and materials, remains the property of AdaptEd Mind.{'\n\n'}
+                  4. <Text style={styles.boldText}>User Data:</Text> Your learning progress and performance data is used to personalize your experience and improve our services.{'\n\n'}
+                  5. <Text style={styles.boldText}>Termination:</Text> We reserve the right to suspend or terminate accounts that violate these terms.
+                </Text>
+              </View>
+
+              <View style={styles.privacySection}>
+                <Text style={styles.privacySectionTitle}>🔐 Privacy Policy</Text>
+                <Text style={styles.privacyText}>
+                  <Text style={styles.boldText}>Information We Collect:</Text>{'\n'}
+                  • Email address and display name{'\n'}
+                  • Learning progress and quiz results{'\n'}
+                  • Usage patterns and preferences{'\n\n'}
+
+                  <Text style={styles.boldText}>How We Use Your Data:</Text>{'\n'}
+                  • Personalize learning recommendations{'\n'}
+                  • Generate adaptive assessments{'\n'}
+                  • Track and display your progress{'\n'}
+                  • Improve our AI algorithms{'\n\n'}
+
+                  <Text style={styles.boldText}>Data Sharing:</Text>{'\n'}
+                  We do not sell your personal information to third parties. Your data may be shared only with service providers who help us operate the platform.
+                </Text>
+              </View>
+
+              <View style={styles.privacySection}>
+                <Text style={styles.privacySectionTitle}>👤 Your Rights</Text>
+                <Text style={styles.privacyText}>
+                  • Access your personal data at any time{'\n'}
+                  • Request data deletion{'\n'}
+                  • Opt-out of non-essential communications{'\n'}
+                  • Export your learning history{'\n'}
+                  • Update your profile information
+                </Text>
+              </View>
+
+              <View style={styles.privacySection}>
+                <Text style={styles.privacySectionTitle}>🍪 Cookies & Tracking</Text>
+                <Text style={styles.privacyText}>
+                  We use cookies and similar technologies to enhance your experience, analyze usage patterns, and remember your preferences.
+                </Text>
+              </View>
+
+              <View style={styles.privacySection}>
+                <Text style={styles.privacySectionTitle}>📞 Contact</Text>
+                <Text style={styles.privacyText}>
+                  For privacy concerns or data requests, contact us at:{'\n'}
+                  privacy@adaptedmind.com
+                </Text>
+              </View>
+
+              <Text style={styles.lastUpdated}>
+                Last Updated: February 2024
+              </Text>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -315,111 +441,11 @@ const styles = StyleSheet.create({
     color: Colors.textLight,
     marginTop: 2,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.xs,
-  },
   sectionTitle: {
     fontSize: FontSizes.lg,
     fontWeight: '600',
     color: Colors.text,
     marginBottom: Spacing.sm,
-  },
-  sectionSubtitle: {
-    fontSize: FontSizes.sm,
-    color: Colors.textLight,
-    marginBottom: Spacing.md,
-  },
-  seeAllText: {
-    fontSize: FontSizes.sm,
-    color: Colors.primary,
-    fontWeight: '500',
-  },
-  buddiesScroll: {
-    marginBottom: Spacing.lg,
-    marginHorizontal: -Spacing.lg,
-    paddingHorizontal: Spacing.lg,
-  },
-  buddyCard: {
-    width: 100,
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    alignItems: 'center',
-    marginRight: Spacing.sm,
-    ...Shadows.sm,
-  },
-  buddyAvatarContainer: {
-    position: 'relative',
-    marginBottom: Spacing.xs,
-  },
-  buddyAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buddyAvatarEmoji: {
-    fontSize: 24,
-  },
-  onlineIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: Colors.secondary,
-    borderWidth: 2,
-    borderColor: Colors.surface,
-  },
-  buddyName: {
-    fontSize: FontSizes.sm,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  buddySubject: {
-    fontSize: FontSizes.xs,
-    color: Colors.textLight,
-    marginBottom: Spacing.xs,
-  },
-  chatButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addBuddyCard: {
-    width: 100,
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: Colors.cardBorder,
-    borderStyle: 'dashed',
-  },
-  addBuddyIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing.xs,
-  },
-  addBuddyText: {
-    fontSize: FontSizes.xs,
-    color: Colors.primary,
-    fontWeight: '500',
-    textAlign: 'center',
   },
   reportCard: {
     flexDirection: 'row',
@@ -522,5 +548,112 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: 'center',
     marginTop: Spacing.lg,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.cardBorder,
+  },
+  modalTitle: {
+    fontSize: FontSizes.xl,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  modalBody: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+  },
+  // About Modal Styles
+  aboutLogo: {
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  aboutLogoEmoji: {
+    fontSize: 60,
+    marginBottom: Spacing.sm,
+  },
+  aboutAppName: {
+    fontSize: FontSizes.xxl,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  aboutVersion: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+    marginTop: 4,
+  },
+  aboutSection: {
+    marginBottom: Spacing.lg,
+  },
+  aboutSectionTitle: {
+    fontSize: FontSizes.lg,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: Spacing.sm,
+  },
+  aboutText: {
+    fontSize: FontSizes.md,
+    color: Colors.textLight,
+    lineHeight: 22,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  featureText: {
+    fontSize: FontSizes.md,
+    color: Colors.text,
+  },
+  copyright: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
+  // Privacy Modal Styles  
+  privacySection: {
+    marginBottom: Spacing.lg,
+  },
+  privacySectionTitle: {
+    fontSize: FontSizes.lg,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: Spacing.sm,
+  },
+  privacyText: {
+    fontSize: FontSizes.md,
+    color: Colors.textLight,
+    lineHeight: 24,
+  },
+  boldText: {
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  lastUpdated: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.lg,
+    fontStyle: 'italic',
   },
 });

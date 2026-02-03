@@ -61,6 +61,17 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="buddies"
+        options={{
+          title: 'Buddies',
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
+              <Ionicons name={focused ? "people" : "people-outline"} size={22} color={color} />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',

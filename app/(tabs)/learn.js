@@ -1,42 +1,194 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
   TouchableOpacity,
-  Dimensions
+  Dimensions,
+  Linking,
+  Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
 import { SUBJECTS } from '../../constants/Config';
-import { FadeInDown, FadeInRight } from '../../components/Animations';
+import { FadeInDown, FadeInRight, FadeInUp } from '../../components/Animations';
 
 const { width } = Dimensions.get('window');
 
-export default function LearnScreen() {
-  const [selectedSubject, setSelectedSubject] = useState(null);
-  const [currentDifficulty, setCurrentDifficulty] = useState('medium');
-  
-  // Study path steps (Module 6)
-  const studyPath = [
-    { id: 1, title: 'Fundamentals', description: 'Basic concepts and introduction', completed: true },
-    { id: 2, title: 'Core Concepts', description: 'Deep dive into main topics', completed: true },
-    { id: 3, title: 'Practice', description: 'Solve problems and exercises', active: true, completed: false },
-    { id: 4, title: 'Advanced Topics', description: 'Complex theories and applications', completed: false },
-    { id: 5, title: 'Mastery', description: 'Final assessment and review', completed: false },
-  ];
+// Subject-specific topics and YouTube videos
+const SUBJECT_CONTENT = {
+  math: {
+    topics: [
+      { id: 1, title: 'Algebra Basics', description: 'Variables, equations, and expressions', duration: '15 min' },
+      { id: 2, title: 'Quadratic Equations', description: 'Solving and graphing quadratics', duration: '20 min' },
+      { id: 3, title: 'Geometry Fundamentals', description: 'Shapes, angles, and proofs', duration: '25 min' },
+      { id: 4, title: 'Trigonometry', description: 'Sin, cos, tan and applications', duration: '30 min' },
+      { id: 5, title: 'Calculus Introduction', description: 'Limits, derivatives, and integrals', duration: '35 min' },
+    ],
+    videos: [
+      { id: 1, title: 'Algebra Full Course', thumbnail: '🔢', videoId: 'NybHckSEQBI', channel: 'freeCodeCamp' },
+      { id: 2, title: 'Quadratic Equations Explained', thumbnail: '📐', videoId: 'i7idZfS8t8w', channel: 'Khan Academy' },
+      { id: 3, title: 'Learn Geometry', thumbnail: '📏', videoId: '302eJ3TzJQU', channel: 'Math Antics' },
+    ]
+  },
+  science: {
+    topics: [
+      { id: 1, title: 'Scientific Method', description: 'Observation, hypothesis, experiment', duration: '10 min' },
+      { id: 2, title: 'Matter and Energy', description: 'States of matter and energy forms', duration: '20 min' },
+      { id: 3, title: 'Forces and Motion', description: 'Newton\'s laws and mechanics', duration: '25 min' },
+      { id: 4, title: 'Ecosystems', description: 'Living organisms and their environment', duration: '20 min' },
+      { id: 5, title: 'Human Body Systems', description: 'Organs and their functions', duration: '30 min' },
+    ],
+    videos: [
+      { id: 1, title: 'Science 101', thumbnail: '🔬', videoId: 'bXsKj_Vs0Ss', channel: 'Nat Geo' },
+      { id: 2, title: 'Newton\'s Laws of Motion', thumbnail: '🚀', videoId: 'kKKM8Y-u7ds', channel: 'Crash Course' },
+      { id: 3, title: 'The Scientific Method', thumbnail: '🧪', videoId: 'N6IAzlugWw0', channel: 'SciShow' },
+    ]
+  },
+  english: {
+    topics: [
+      { id: 1, title: 'Grammar Essentials', description: 'Parts of speech and sentence structure', duration: '15 min' },
+      { id: 2, title: 'Essay Writing', description: 'Structure, thesis, and arguments', duration: '25 min' },
+      { id: 3, title: 'Reading Comprehension', description: 'Analysis and interpretation', duration: '20 min' },
+      { id: 4, title: 'Vocabulary Building', description: 'Word roots and context clues', duration: '15 min' },
+      { id: 5, title: 'Creative Writing', description: 'Storytelling and narrative techniques', duration: '30 min' },
+    ],
+    videos: [
+      { id: 1, title: 'English Grammar Course', thumbnail: '📚', videoId: '7Bmj-dPVBzs', channel: 'English Addict' },
+      { id: 2, title: 'Essay Writing Tips', thumbnail: '✍️', videoId: 'dZVzuFLUaF8', channel: 'TED-Ed' },
+      { id: 3, title: 'Improve Vocabulary', thumbnail: '📖', videoId: 'WnlBZ_5bS0Y', channel: 'English Lessons' },
+    ]
+  },
+  physics: {
+    topics: [
+      { id: 1, title: 'Mechanics', description: 'Motion, forces, and energy', duration: '30 min' },
+      { id: 2, title: 'Waves and Sound', description: 'Wave properties and acoustics', duration: '25 min' },
+      { id: 3, title: 'Electricity', description: 'Circuits, current, and voltage', duration: '30 min' },
+      { id: 4, title: 'Magnetism', description: 'Magnetic fields and electromagnetism', duration: '25 min' },
+      { id: 5, title: 'Optics', description: 'Light, reflection, and refraction', duration: '20 min' },
+    ],
+    videos: [
+      { id: 1, title: 'Physics Full Course', thumbnail: '⚛️', videoId: 'ZM8ECpBuQYE', channel: 'freeCodeCamp' },
+      { id: 2, title: 'Electricity Explained', thumbnail: '⚡', videoId: 'mc979OhitAg', channel: 'Crash Course' },
+      { id: 3, title: 'Waves and Light', thumbnail: '🌊', videoId: 'Io-HXZTepH4', channel: 'Khan Academy' },
+    ]
+  },
+  chemistry: {
+    topics: [
+      { id: 1, title: 'Atomic Structure', description: 'Protons, neutrons, and electrons', duration: '20 min' },
+      { id: 2, title: 'Periodic Table', description: 'Elements and their properties', duration: '25 min' },
+      { id: 3, title: 'Chemical Bonding', description: 'Ionic, covalent, and metallic bonds', duration: '30 min' },
+      { id: 4, title: 'Chemical Reactions', description: 'Reaction types and balancing', duration: '25 min' },
+      { id: 5, title: 'Organic Chemistry', description: 'Carbon compounds and hydrocarbons', duration: '35 min' },
+    ],
+    videos: [
+      { id: 1, title: 'Chemistry Basics', thumbnail: '🧪', videoId: 'bka20Q9TN6M', channel: 'Crash Course' },
+      { id: 2, title: 'Periodic Table Explained', thumbnail: '⚗️', videoId: 'rz4Dd1I_fX0', channel: 'TED-Ed' },
+      { id: 3, title: 'Chemical Bonding', thumbnail: '🔗', videoId: 'CGA8sRwqIFg', channel: 'Professor Dave' },
+    ]
+  },
+  biology: {
+    topics: [
+      { id: 1, title: 'Cell Biology', description: 'Cell structure and functions', duration: '25 min' },
+      { id: 2, title: 'Genetics', description: 'DNA, genes, and inheritance', duration: '30 min' },
+      { id: 3, title: 'Evolution', description: 'Natural selection and adaptation', duration: '25 min' },
+      { id: 4, title: 'Human Anatomy', description: 'Body systems and organs', duration: '35 min' },
+      { id: 5, title: 'Ecology', description: 'Ecosystems and biodiversity', duration: '20 min' },
+    ],
+    videos: [
+      { id: 1, title: 'Biology Full Course', thumbnail: '🧬', videoId: 'QnQe0xW_JY4', channel: 'Crash Course' },
+      { id: 2, title: 'DNA Explained', thumbnail: '🔬', videoId: '8kK2zwjRV0M', channel: 'Kurzgesagt' },
+      { id: 3, title: 'Cell Biology', thumbnail: '🦠', videoId: 'URUJD5NEXC8', channel: 'Amoeba Sisters' },
+    ]
+  },
+  history: {
+    topics: [
+      { id: 1, title: 'Ancient Civilizations', description: 'Egypt, Greece, and Rome', duration: '30 min' },
+      { id: 2, title: 'Medieval Period', description: 'Feudalism and the Dark Ages', duration: '25 min' },
+      { id: 3, title: 'Renaissance', description: 'Art, science, and cultural rebirth', duration: '20 min' },
+      { id: 4, title: 'World Wars', description: 'WWI and WWII major events', duration: '35 min' },
+      { id: 5, title: 'Modern History', description: 'Cold War to present day', duration: '30 min' },
+    ],
+    videos: [
+      { id: 1, title: 'World History Course', thumbnail: '🏛️', videoId: 'Yocja_N5s1I', channel: 'Crash Course' },
+      { id: 2, title: 'Ancient Egypt', thumbnail: '🏺', videoId: 'hO1tzmi1V5g', channel: 'National Geographic' },
+      { id: 3, title: 'World War II', thumbnail: '⚔️', videoId: 'Q78COTwT7nE', channel: 'Oversimplified' },
+    ]
+  },
+  geography: {
+    topics: [
+      { id: 1, title: 'Physical Geography', description: 'Landforms and natural features', duration: '20 min' },
+      { id: 2, title: 'Climate Zones', description: 'World climates and weather patterns', duration: '25 min' },
+      { id: 3, title: 'Maps and Navigation', description: 'Reading and using maps', duration: '15 min' },
+      { id: 4, title: 'Human Geography', description: 'Population and culture', duration: '20 min' },
+      { id: 5, title: 'Environmental Issues', description: 'Climate change and conservation', duration: '25 min' },
+    ],
+    videos: [
+      { id: 1, title: 'Geography Now!', thumbnail: '🌍', videoId: 'UhXF5FMUdQA', channel: 'Geography Now' },
+      { id: 2, title: 'Climate Zones Explained', thumbnail: '🌡️', videoId: '5lYXj-5lWFg', channel: 'Crash Course' },
+      { id: 3, title: 'Planet Earth', thumbnail: '🌎', videoId: 'i8r3roDnvh8', channel: 'BBC Earth' },
+    ]
+  },
+  computer: {
+    topics: [
+      { id: 1, title: 'Programming Basics', description: 'Variables, loops, and functions', duration: '30 min' },
+      { id: 2, title: 'Web Development', description: 'HTML, CSS, and JavaScript', duration: '35 min' },
+      { id: 3, title: 'Data Structures', description: 'Arrays, lists, and trees', duration: '30 min' },
+      { id: 4, title: 'Algorithms', description: 'Sorting, searching, and optimization', duration: '35 min' },
+      { id: 5, title: 'Computer Networks', description: 'Internet and protocols', duration: '25 min' },
+    ],
+    videos: [
+      { id: 1, title: 'Programming for Beginners', thumbnail: '💻', videoId: 'zOjov-2OZ0E', channel: 'freeCodeCamp' },
+      { id: 2, title: 'Web Development Course', thumbnail: '🌐', videoId: 'pQN-pnXPaVg', channel: 'freeCodeCamp' },
+      { id: 3, title: 'Data Structures', thumbnail: '📊', videoId: 'RBSGKlAvoiM', channel: 'freeCodeCamp' },
+    ]
+  },
+  arts: {
+    topics: [
+      { id: 1, title: 'Art History', description: 'Major movements and artists', duration: '25 min' },
+      { id: 2, title: 'Drawing Fundamentals', description: 'Lines, shapes, and shading', duration: '20 min' },
+      { id: 3, title: 'Color Theory', description: 'Color wheel and harmonies', duration: '15 min' },
+      { id: 4, title: 'Painting Techniques', description: 'Watercolor, acrylic, and oil', duration: '30 min' },
+      { id: 5, title: 'Digital Art', description: 'Digital tools and techniques', duration: '25 min' },
+    ],
+    videos: [
+      { id: 1, title: 'Art History Overview', thumbnail: '🎨', videoId: 'lB6Be0tkdBE', channel: 'Crash Course' },
+      { id: 2, title: 'Drawing for Beginners', thumbnail: '✏️', videoId: 'ewMksAbgdBI', channel: 'Proko' },
+      { id: 3, title: 'Color Theory Basics', thumbnail: '🖌️', videoId: 'Qj1FK8n7WgY', channel: 'Blender Guru' },
+    ]
+  }
+};
 
-  // Current lesson based on difficulty (Module 3)
-  const currentLesson = {
-    title: 'Quadratic Equations',
-    subject: 'Mathematics',
-    difficulty: currentDifficulty,
-    duration: '25 min',
-    progress: 45,
+export default function LearnScreen() {
+  const [selectedSubject, setSelectedSubject] = useState('math');
+
+  // Get current subject content
+  const currentContent = SUBJECT_CONTENT[selectedSubject] || SUBJECT_CONTENT.math;
+  const currentSubjectData = SUBJECTS.find(s => s.id === selectedSubject) || SUBJECTS[0];
+
+  // Open YouTube video
+  const openVideo = (videoId) => {
+    const url = `https://www.youtube.com/watch?v=${videoId}`;
+    Linking.openURL(url).catch(err => console.error('Error opening video:', err));
   };
 
-  const difficultyLevels = ['easy', 'medium', 'hard'];
+  // Get subject icon
+  const getSubjectIcon = (subjectId) => {
+    const icons = {
+      math: 'calculator',
+      science: 'flask',
+      english: 'book',
+      history: 'time',
+      geography: 'globe',
+      physics: 'nuclear',
+      chemistry: 'beaker',
+      biology: 'leaf',
+      computer: 'laptop',
+      arts: 'color-palette',
+    };
+    return icons[subjectId] || 'school';
+  };
 
   return (
     <View style={styles.container}>
@@ -50,142 +202,140 @@ export default function LearnScreen() {
           <Text style={styles.subtitle}>Your personalized learning journey</Text>
         </FadeInDown>
 
-        {/* Current Lesson with Difficulty Adjuster - Module 3 */}
+        {/* Subject Selection - Horizontal Scroll */}
         <FadeInDown delay={100}>
+          <Text style={styles.sectionTitle}>📖 Choose Subject</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.subjectScroll}
+            contentContainerStyle={styles.subjectScrollContent}
+          >
+            {SUBJECTS.slice(0, 10).map((subject, index) => (
+              <TouchableOpacity
+                key={subject.id}
+                style={[
+                  styles.subjectChip,
+                  selectedSubject === subject.id && {
+                    backgroundColor: subject.color,
+                    borderColor: subject.color
+                  }
+                ]}
+                onPress={() => setSelectedSubject(subject.id)}
+              >
+                <Ionicons
+                  name={getSubjectIcon(subject.id)}
+                  size={18}
+                  color={selectedSubject === subject.id ? '#fff' : subject.color}
+                />
+                <Text style={[
+                  styles.subjectChipText,
+                  selectedSubject === subject.id && { color: '#fff' }
+                ]}>
+                  {subject.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </FadeInDown>
+
+        {/* Current Subject Header */}
+        <FadeInDown delay={150}>
+          <View style={[styles.subjectHeader, { backgroundColor: currentSubjectData.color + '15' }]}>
+            <View style={[styles.subjectHeaderIcon, { backgroundColor: currentSubjectData.color }]}>
+              <Ionicons name={getSubjectIcon(selectedSubject)} size={28} color="#fff" />
+            </View>
+            <View style={styles.subjectHeaderInfo}>
+              <Text style={styles.subjectHeaderTitle}>{currentSubjectData.name}</Text>
+              <Text style={styles.subjectHeaderStats}>
+                {currentContent.topics.length} Topics • {currentContent.videos.length} Videos
+              </Text>
+            </View>
+          </View>
+        </FadeInDown>
+
+        {/* Topics Section */}
+        <FadeInDown delay={200}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>📚 Current Lesson</Text>
+            <Text style={styles.sectionTitle}>📚 Topics</Text>
             <View style={styles.aiBadge}>
               <Ionicons name="sparkles" size={12} color={Colors.primary} />
-              <Text style={styles.aiBadgeText}>AI Adjusted</Text>
+              <Text style={styles.aiBadgeText}>AI Curated</Text>
             </View>
           </View>
-          
-          <View style={styles.lessonCard}>
-            <View style={styles.lessonHeader}>
-              <View style={styles.lessonIconContainer}>
-                <Ionicons name="calculator" size={24} color={Colors.primary} />
-              </View>
-              <View style={styles.lessonInfo}>
-                <Text style={styles.lessonTitle}>{currentLesson.title}</Text>
-                <Text style={styles.lessonSubject}>{currentLesson.subject}</Text>
-              </View>
-              <View style={styles.durationBadge}>
-                <Ionicons name="time-outline" size={14} color={Colors.textLight} />
-                <Text style={styles.durationText}>{currentLesson.duration}</Text>
-              </View>
-            </View>
-            
-            {/* Difficulty Selector */}
-            <View style={styles.difficultySection}>
-              <Text style={styles.difficultyLabel}>Difficulty Level:</Text>
-              <View style={styles.difficultyButtons}>
-                {difficultyLevels.map((level) => (
-                  <TouchableOpacity
-                    key={level}
-                    style={[
-                      styles.difficultyButton,
-                      currentDifficulty === level && styles.difficultyButtonActive
-                    ]}
-                    onPress={() => setCurrentDifficulty(level)}
-                  >
-                    <Text style={[
-                      styles.difficultyButtonText,
-                      currentDifficulty === level && styles.difficultyButtonTextActive
-                    ]}>
-                      {level.charAt(0).toUpperCase() + level.slice(1)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
 
-            {/* Progress */}
-            <View style={styles.lessonProgress}>
-              <View style={styles.progressHeader}>
-                <Text style={styles.progressLabel}>Progress</Text>
-                <Text style={styles.progressValue}>{currentLesson.progress}%</Text>
-              </View>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: `${currentLesson.progress}%` }]} />
-              </View>
-            </View>
+          {currentContent.topics.map((topic, index) => (
+            <FadeInUp key={topic.id} delay={250 + index * 50}>
+              <TouchableOpacity style={styles.topicCard}>
+                <View style={[styles.topicNumber, { backgroundColor: currentSubjectData.color + '20' }]}>
+                  <Text style={[styles.topicNumberText, { color: currentSubjectData.color }]}>
+                    {topic.id}
+                  </Text>
+                </View>
+                <View style={styles.topicContent}>
+                  <Text style={styles.topicTitle}>{topic.title}</Text>
+                  <Text style={styles.topicDescription}>{topic.description}</Text>
+                </View>
+                <View style={styles.topicMeta}>
+                  <Ionicons name="time-outline" size={14} color={Colors.textMuted} />
+                  <Text style={styles.topicDuration}>{topic.duration}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+              </TouchableOpacity>
+            </FadeInUp>
+          ))}
+        </FadeInDown>
 
-            <TouchableOpacity style={styles.continueButton}>
-              <Text style={styles.continueButtonText}>Continue Learning</Text>
-              <Ionicons name="play" size={18} color="#fff" />
+        {/* YouTube Videos Section */}
+        <FadeInDown delay={400}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>🎬 Video Lessons</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
-        </FadeInDown>
 
-        {/* Study Path - Module 6 */}
-        <FadeInDown delay={200}>
-          <Text style={styles.sectionTitle}>🎯 Study Path Guide</Text>
-          <View style={styles.pathContainer}>
-            {studyPath.map((step, index) => (
-              <FadeInDown key={step.id} delay={300 + index * 100}>
-                <View style={styles.pathStep}>
-                  <View style={styles.pathLine}>
-                    <View style={[
-                      styles.pathDot,
-                      step.completed && styles.pathDotCompleted,
-                      step.active && styles.pathDotActive
-                    ]}>
-                      {step.completed ? (
-                        <Ionicons name="checkmark" size={14} color="#fff" />
-                      ) : (
-                        <Text style={styles.pathDotText}>{step.id}</Text>
-                      )}
-                    </View>
-                    {index < studyPath.length - 1 && (
-                      <View style={[
-                        styles.pathConnector,
-                        step.completed && styles.pathConnectorCompleted
-                      ]} />
-                    )}
-                  </View>
-                  <View style={[
-                    styles.pathContent,
-                    step.active && styles.pathContentActive
-                  ]}>
-                    <Text style={[
-                      styles.pathTitle,
-                      step.completed && styles.pathTitleCompleted
-                    ]}>
-                      {step.title}
-                    </Text>
-                    <Text style={styles.pathDescription}>{step.description}</Text>
-                    {step.active && (
-                      <TouchableOpacity style={styles.pathButton}>
-                        <Text style={styles.pathButtonText}>Start Now</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-              </FadeInDown>
-            ))}
-          </View>
-        </FadeInDown>
-
-        {/* Subject Selection */}
-        <FadeInDown delay={400}>
-          <Text style={styles.sectionTitle}>📖 Browse Subjects</Text>
-          <View style={styles.subjectsGrid}>
-            {SUBJECTS.slice(0, 8).map((subject, index) => (
-              <FadeInRight key={subject.id} delay={500 + index * 50}>
-                <TouchableOpacity 
-                  style={[
-                    styles.subjectCard,
-                    selectedSubject === subject.id && styles.subjectCardSelected
-                  ]}
-                  onPress={() => setSelectedSubject(subject.id)}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.videosScroll}
+          >
+            {currentContent.videos.map((video, index) => (
+              <FadeInRight key={video.id} delay={450 + index * 100}>
+                <TouchableOpacity
+                  style={styles.videoCard}
+                  onPress={() => openVideo(video.videoId)}
                 >
-                  <View style={[styles.subjectIcon, { backgroundColor: `${subject.color}20` }]}>
-                    <Ionicons name={getSubjectIcon(subject.id)} size={24} color={subject.color} />
+                  <View style={[styles.videoThumbnail, { backgroundColor: currentSubjectData.color + '20' }]}>
+                    <Text style={styles.videoEmoji}>{video.thumbnail}</Text>
+                    <View style={styles.playButton}>
+                      <Ionicons name="play" size={24} color="#fff" />
+                    </View>
                   </View>
-                  <Text style={styles.subjectName}>{subject.name}</Text>
+                  <View style={styles.videoInfo}>
+                    <Text style={styles.videoTitle} numberOfLines={2}>{video.title}</Text>
+                    <View style={styles.videoMeta}>
+                      <Ionicons name="logo-youtube" size={14} color="#FF0000" />
+                      <Text style={styles.videoChannel}>{video.channel}</Text>
+                    </View>
+                  </View>
                 </TouchableOpacity>
               </FadeInRight>
             ))}
+          </ScrollView>
+        </FadeInDown>
+
+        {/* Quick Tips */}
+        <FadeInDown delay={500}>
+          <View style={styles.tipsCard}>
+            <View style={styles.tipsHeader}>
+              <Ionicons name="bulb" size={24} color={Colors.accent} />
+              <Text style={styles.tipsTitle}>Study Tip</Text>
+            </View>
+            <Text style={styles.tipsText}>
+              Watch video lessons first, then practice with topics.
+              Take quizzes to test your understanding! 🎯
+            </Text>
           </View>
         </FadeInDown>
 
@@ -195,22 +345,6 @@ export default function LearnScreen() {
     </View>
   );
 }
-
-const getSubjectIcon = (subjectId) => {
-  const icons = {
-    math: 'calculator',
-    science: 'flask',
-    english: 'book',
-    history: 'time',
-    geography: 'globe',
-    physics: 'nuclear',
-    chemistry: 'beaker',
-    biology: 'leaf',
-    computer: 'laptop',
-    arts: 'color-palette',
-  };
-  return icons[subjectId] || 'school';
-};
 
 const styles = StyleSheet.create({
   container: {
@@ -237,21 +371,21 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    justifyContent: 'space-between',
     marginBottom: Spacing.md,
+    marginTop: Spacing.lg,
   },
   sectionTitle: {
     fontSize: FontSizes.lg,
     fontWeight: '600',
     color: Colors.text,
-    marginBottom: Spacing.md,
   },
   aiBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(99, 102, 241, 0.1)',
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: 4,
     borderRadius: BorderRadius.full,
     gap: 4,
   },
@@ -260,231 +394,176 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontWeight: '600',
   },
-  lessonCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
-    marginBottom: Spacing.lg,
-    ...Shadows.md,
-  },
-  lessonHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  lessonIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: Spacing.md,
-  },
-  lessonInfo: {
-    flex: 1,
-  },
-  lessonTitle: {
-    fontSize: FontSizes.lg,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  lessonSubject: {
+  seeAllText: {
     fontSize: FontSizes.sm,
-    color: Colors.textLight,
-  },
-  durationBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.background,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.md,
-    gap: 4,
-  },
-  durationText: {
-    fontSize: FontSizes.xs,
-    color: Colors.textLight,
-  },
-  difficultySection: {
-    marginBottom: Spacing.md,
-  },
-  difficultyLabel: {
-    fontSize: FontSizes.sm,
-    color: Colors.textLight,
-    marginBottom: Spacing.sm,
-  },
-  difficultyButtons: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  difficultyButton: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    backgroundColor: Colors.background,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.cardBorder,
-  },
-  difficultyButtonActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  difficultyButtonText: {
-    fontSize: FontSizes.sm,
-    fontWeight: '500',
-    color: Colors.text,
-  },
-  difficultyButtonTextActive: {
-    color: '#fff',
-  },
-  lessonProgress: {
-    marginBottom: Spacing.md,
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.xs,
-  },
-  progressLabel: {
-    fontSize: FontSizes.sm,
-    color: Colors.textLight,
-  },
-  progressValue: {
-    fontSize: FontSizes.sm,
-    fontWeight: '600',
     color: Colors.primary,
+    fontWeight: '500',
   },
-  progressBar: {
-    height: 6,
-    backgroundColor: Colors.cardBorder,
-    borderRadius: 3,
-    overflow: 'hidden',
+  subjectScroll: {
+    marginHorizontal: -Spacing.lg,
   },
-  progressFill: {
-    height: '100%',
-    backgroundColor: Colors.primary,
-    borderRadius: 3,
-  },
-  continueButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.primary,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
+  subjectScrollContent: {
+    paddingHorizontal: Spacing.lg,
     gap: Spacing.sm,
   },
-  continueButtonText: {
-    fontSize: FontSizes.md,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  pathContainer: {
-    marginBottom: Spacing.lg,
-  },
-  pathStep: {
+  subjectChip: {
     flexDirection: 'row',
-    marginBottom: Spacing.md,
-  },
-  pathLine: {
     alignItems: 'center',
-    marginRight: Spacing.md,
-  },
-  pathDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.cardBorder,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pathDotCompleted: {
-    backgroundColor: Colors.secondary,
-  },
-  pathDotActive: {
-    backgroundColor: Colors.primary,
-  },
-  pathDotText: {
-    fontSize: FontSizes.sm,
-    fontWeight: '600',
-    color: Colors.textLight,
-  },
-  pathConnector: {
-    width: 2,
-    flex: 1,
-    backgroundColor: Colors.cardBorder,
-    marginVertical: 4,
-  },
-  pathConnectorCompleted: {
-    backgroundColor: Colors.secondary,
-  },
-  pathContent: {
-    flex: 1,
-    paddingBottom: Spacing.md,
-  },
-  pathContentActive: {
-    backgroundColor: 'rgba(99, 102, 241, 0.05)',
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    marginTop: -Spacing.xs,
-  },
-  pathTitle: {
-    fontSize: FontSizes.md,
-    fontWeight: '600',
-    color: Colors.text,
-    marginBottom: 4,
-  },
-  pathTitleCompleted: {
-    color: Colors.secondary,
-  },
-  pathDescription: {
-    fontSize: FontSizes.sm,
-    color: Colors.textLight,
-  },
-  pathButton: {
-    backgroundColor: Colors.primary,
     paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.md,
-    alignSelf: 'flex-start',
-    marginTop: Spacing.sm,
-  },
-  pathButtonText: {
-    fontSize: FontSizes.sm,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  subjectsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
-  subjectCard: {
-    width: (width - Spacing.lg * 2 - Spacing.sm * 3) / 4,
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.sm,
-    alignItems: 'center',
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
+    gap: Spacing.xs,
+    marginRight: Spacing.sm,
     ...Shadows.sm,
   },
-  subjectCardSelected: {
-    borderWidth: 2,
-    borderColor: Colors.primary,
-  },
-  subjectIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing.xs,
-  },
-  subjectName: {
-    fontSize: 10,
+  subjectChipText: {
+    fontSize: FontSizes.sm,
     fontWeight: '500',
     color: Colors.text,
-    textAlign: 'center',
+  },
+  subjectHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.xl,
+    marginTop: Spacing.md,
+  },
+  subjectHeaderIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.md,
+  },
+  subjectHeaderInfo: {
+    flex: 1,
+  },
+  subjectHeaderTitle: {
+    fontSize: FontSizes.xl,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  subjectHeaderStats: {
+    fontSize: FontSizes.sm,
+    color: Colors.textLight,
+    marginTop: 2,
+  },
+  topicCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+    ...Shadows.sm,
+  },
+  topicNumber: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.md,
+  },
+  topicNumberText: {
+    fontSize: FontSizes.md,
+    fontWeight: '700',
+  },
+  topicContent: {
+    flex: 1,
+  },
+  topicTitle: {
+    fontSize: FontSizes.md,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  topicDescription: {
+    fontSize: FontSizes.sm,
+    color: Colors.textLight,
+    marginTop: 2,
+  },
+  topicMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: Spacing.sm,
+    gap: 4,
+  },
+  topicDuration: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+  },
+  videosScroll: {
+    marginHorizontal: -Spacing.lg,
+    paddingLeft: Spacing.lg,
+  },
+  videoCard: {
+    width: 200,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
+    marginRight: Spacing.md,
+    overflow: 'hidden',
+    ...Shadows.sm,
+  },
+  videoThumbnail: {
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  videoEmoji: {
+    fontSize: 48,
+  },
+  playButton: {
+    position: 'absolute',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoInfo: {
+    padding: Spacing.md,
+  },
+  videoTitle: {
+    fontSize: FontSizes.md,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: Spacing.xs,
+  },
+  videoMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  videoChannel: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+  },
+  tipsCard: {
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    marginTop: Spacing.lg,
+  },
+  tipsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  tipsTitle: {
+    fontSize: FontSizes.md,
+    fontWeight: '600',
+    color: Colors.accent,
+  },
+  tipsText: {
+    fontSize: FontSizes.md,
+    color: Colors.text,
+    lineHeight: 22,
   },
 });
