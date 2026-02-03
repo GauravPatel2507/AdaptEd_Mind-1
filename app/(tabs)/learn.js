@@ -30,6 +30,9 @@ const SUBJECT_CONTENT = {
       { id: 1, title: 'Algebra Full Course', thumbnail: '🔢', videoId: 'NybHckSEQBI', channel: 'freeCodeCamp' },
       { id: 2, title: 'Quadratic Equations Explained', thumbnail: '📐', videoId: 'i7idZfS8t8w', channel: 'Khan Academy' },
       { id: 3, title: 'Learn Geometry', thumbnail: '📏', videoId: '302eJ3TzJQU', channel: 'Math Antics' },
+      { id: 4, title: 'Trigonometry Basics', thumbnail: '📊', videoId: 'PUB0TaZ7bhA', channel: 'Khan Academy' },
+      { id: 5, title: 'Calculus 1 - Full Course', thumbnail: '∫', videoId: 'HfACrKJ_Y2w', channel: 'freeCodeCamp' },
+      { id: 6, title: 'Linear Algebra', thumbnail: '🔷', videoId: 'fNk_zzaMoSs', channel: '3Blue1Brown' },
     ]
   },
   science: {
@@ -44,6 +47,9 @@ const SUBJECT_CONTENT = {
       { id: 1, title: 'Science 101', thumbnail: '🔬', videoId: 'bXsKj_Vs0Ss', channel: 'Nat Geo' },
       { id: 2, title: 'Newton\'s Laws of Motion', thumbnail: '🚀', videoId: 'kKKM8Y-u7ds', channel: 'Crash Course' },
       { id: 3, title: 'The Scientific Method', thumbnail: '🧪', videoId: 'N6IAzlugWw0', channel: 'SciShow' },
+      { id: 4, title: 'States of Matter', thumbnail: '💧', videoId: 'YRLJUvPKN0A', channel: 'Crash Course' },
+      { id: 5, title: 'Energy and Power', thumbnail: '⚡', videoId: 'w4QFJb9a8vo', channel: 'Khan Academy' },
+      { id: 6, title: 'Ecosystems Explained', thumbnail: '🌿', videoId: 'sHIo0FKDz-k', channel: 'National Geographic' },
     ]
   },
   english: {
@@ -58,6 +64,9 @@ const SUBJECT_CONTENT = {
       { id: 1, title: 'English Grammar Course', thumbnail: '📚', videoId: '7Bmj-dPVBzs', channel: 'English Addict' },
       { id: 2, title: 'Essay Writing Tips', thumbnail: '✍️', videoId: 'dZVzuFLUaF8', channel: 'TED-Ed' },
       { id: 3, title: 'Improve Vocabulary', thumbnail: '📖', videoId: 'WnlBZ_5bS0Y', channel: 'English Lessons' },
+      { id: 4, title: 'Reading Comprehension', thumbnail: '📕', videoId: 'OLjXy0BPBnE', channel: 'Khan Academy' },
+      { id: 5, title: 'Creative Writing Basics', thumbnail: '🖊️', videoId: 'frz6g1M3pEE', channel: 'Skillshare' },
+      { id: 6, title: 'Public Speaking Skills', thumbnail: '🎤', videoId: 'H6qgkCvJWiU', channel: 'TED-Ed' },
     ]
   },
   physics: {
@@ -72,6 +81,9 @@ const SUBJECT_CONTENT = {
       { id: 1, title: 'Physics Full Course', thumbnail: '⚛️', videoId: 'ZM8ECpBuQYE', channel: 'freeCodeCamp' },
       { id: 2, title: 'Electricity Explained', thumbnail: '⚡', videoId: 'mc979OhitAg', channel: 'Crash Course' },
       { id: 3, title: 'Waves and Light', thumbnail: '🌊', videoId: 'Io-HXZTepH4', channel: 'Khan Academy' },
+      { id: 4, title: 'Quantum Mechanics Intro', thumbnail: '🔬', videoId: 'Usu9xZfabPM', channel: 'PBS Space Time' },
+      { id: 5, title: 'Thermodynamics Basics', thumbnail: '🌡️', videoId: 'NyOYW07-L5g', channel: 'Khan Academy' },
+      { id: 6, title: 'Magnetism Explained', thumbnail: '🧲', videoId: 'hFAOXdXZ5TM', channel: 'Veritasium' },
     ]
   },
   chemistry: {
@@ -86,6 +98,9 @@ const SUBJECT_CONTENT = {
       { id: 1, title: 'Chemistry Basics', thumbnail: '🧪', videoId: 'bka20Q9TN6M', channel: 'Crash Course' },
       { id: 2, title: 'Periodic Table Explained', thumbnail: '⚗️', videoId: 'rz4Dd1I_fX0', channel: 'TED-Ed' },
       { id: 3, title: 'Chemical Bonding', thumbnail: '🔗', videoId: 'CGA8sRwqIFg', channel: 'Professor Dave' },
+      { id: 4, title: 'Organic Chemistry Intro', thumbnail: '🔬', videoId: 'GOBFw0vVDlI', channel: 'Khan Academy' },
+      { id: 5, title: 'Chemical Reactions', thumbnail: '💥', videoId: 'kzlUyrccbos', channel: 'Crash Course' },
+      { id: 6, title: 'Acids and Bases', thumbnail: '🧫', videoId: 'vt8fB3MFzLk', channel: 'Bozeman Science' },
     ]
   },
   biology: {
@@ -100,6 +115,9 @@ const SUBJECT_CONTENT = {
       { id: 1, title: 'Biology Full Course', thumbnail: '🧬', videoId: 'QnQe0xW_JY4', channel: 'Crash Course' },
       { id: 2, title: 'DNA Explained', thumbnail: '🔬', videoId: '8kK2zwjRV0M', channel: 'Kurzgesagt' },
       { id: 3, title: 'Cell Biology', thumbnail: '🦠', videoId: 'URUJD5NEXC8', channel: 'Amoeba Sisters' },
+      { id: 4, title: 'Evolution Explained', thumbnail: '🐒', videoId: 'hOfRN0KihOU', channel: 'Stated Clearly' },
+      { id: 5, title: 'Photosynthesis', thumbnail: '🌱', videoId: 'g78utcLQrJ4', channel: 'Bozeman Science' },
+      { id: 6, title: 'Human Body Systems', thumbnail: '❤️', videoId: 'lYXj-5lWFg', channel: 'Crash Course' },
     ]
   },
   history: {
@@ -114,6 +132,9 @@ const SUBJECT_CONTENT = {
       { id: 1, title: 'World History Course', thumbnail: '🏛️', videoId: 'Yocja_N5s1I', channel: 'Crash Course' },
       { id: 2, title: 'Ancient Egypt', thumbnail: '🏺', videoId: 'hO1tzmi1V5g', channel: 'National Geographic' },
       { id: 3, title: 'World War II', thumbnail: '⚔️', videoId: 'Q78COTwT7nE', channel: 'Oversimplified' },
+      { id: 4, title: 'Renaissance Period', thumbnail: '🎨', videoId: 'Vufba_ZcoR0', channel: 'TED-Ed' },
+      { id: 5, title: 'Industrial Revolution', thumbnail: '⚙️', videoId: 'zhL5DCizj5c', channel: 'Crash Course' },
+      { id: 6, title: 'Cold War History', thumbnail: '🌐', videoId: 'I79TpDe3t2g', channel: 'Oversimplified' },
     ]
   },
   geography: {
@@ -128,6 +149,9 @@ const SUBJECT_CONTENT = {
       { id: 1, title: 'Geography Now!', thumbnail: '🌍', videoId: 'UhXF5FMUdQA', channel: 'Geography Now' },
       { id: 2, title: 'Climate Zones Explained', thumbnail: '🌡️', videoId: '5lYXj-5lWFg', channel: 'Crash Course' },
       { id: 3, title: 'Planet Earth', thumbnail: '🌎', videoId: 'i8r3roDnvh8', channel: 'BBC Earth' },
+      { id: 4, title: 'Plate Tectonics', thumbnail: '🌋', videoId: 'pwODwwgE6rA', channel: 'National Geographic' },
+      { id: 5, title: 'World Biomes', thumbnail: '🌲', videoId: 'bpj8ybJkYHs', channel: 'Crash Course' },
+      { id: 6, title: 'Map Reading Skills', thumbnail: '🗺️', videoId: 'NAye4Ir_5Qs', channel: 'Geography Skills' },
     ]
   },
   computer: {
@@ -142,6 +166,9 @@ const SUBJECT_CONTENT = {
       { id: 1, title: 'Programming for Beginners', thumbnail: '💻', videoId: 'zOjov-2OZ0E', channel: 'freeCodeCamp' },
       { id: 2, title: 'Web Development Course', thumbnail: '🌐', videoId: 'pQN-pnXPaVg', channel: 'freeCodeCamp' },
       { id: 3, title: 'Data Structures', thumbnail: '📊', videoId: 'RBSGKlAvoiM', channel: 'freeCodeCamp' },
+      { id: 4, title: 'Python Full Course', thumbnail: '🐍', videoId: '_uQrJ0TkZlc', channel: 'Programming with Mosh' },
+      { id: 5, title: 'JavaScript Tutorial', thumbnail: '⚡', videoId: 'PkZNo7MFNFg', channel: 'freeCodeCamp' },
+      { id: 6, title: 'Algorithms Explained', thumbnail: '🔍', videoId: '8hly31xKli0', channel: 'CS Dojo' },
     ]
   },
   arts: {
@@ -156,6 +183,9 @@ const SUBJECT_CONTENT = {
       { id: 1, title: 'Art History Overview', thumbnail: '🎨', videoId: 'lB6Be0tkdBE', channel: 'Crash Course' },
       { id: 2, title: 'Drawing for Beginners', thumbnail: '✏️', videoId: 'ewMksAbgdBI', channel: 'Proko' },
       { id: 3, title: 'Color Theory Basics', thumbnail: '🖌️', videoId: 'Qj1FK8n7WgY', channel: 'Blender Guru' },
+      { id: 4, title: 'Watercolor Techniques', thumbnail: '💧', videoId: 'ZiGKS8JhwP8', channel: 'Mind of Watercolor' },
+      { id: 5, title: 'Digital Art Tutorial', thumbnail: '🖥️', videoId: 'iwRNeZAa-GY', channel: 'Aaron Blaise' },
+      { id: 6, title: 'Portrait Drawing', thumbnail: '👤', videoId: 'VGLEKLFOSqU', channel: 'Proko' },
     ]
   }
 };
