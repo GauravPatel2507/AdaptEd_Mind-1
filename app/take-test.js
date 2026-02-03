@@ -13,6 +13,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Colors, Spacing, BorderRadius, FontSizes, Shadows } from '../constants/Colors';
 import { generateAITest } from '../services/aiService';
+import { updateProgress } from '../services/progressService';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../config/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
@@ -20,6 +24,7 @@ const { width, height } = Dimensions.get('window');
 export default function TakeTestScreen() {
     const params = useLocalSearchParams();
     const { subject, subjectColor, questions: questionsParam, timeLimit: timeLimitParam, difficulty } = params;
+    const { user } = useAuth();
 
     const [isLoading, setIsLoading] = useState(true);
     const [questions, setQuestions] = useState([]);
@@ -29,6 +34,8 @@ export default function TakeTestScreen() {
     const [testCompleted, setTestCompleted] = useState(false);
     const [showResults, setShowResults] = useState(false);
     const [score, setScore] = useState(0);
+    const [savingResults, setSavingResults] = useState(false);
+    const [aiInsight, setAiInsight] = useState(null);
     const timerRef = useRef(null);
 
     // Parse questions if passed as param, otherwise generate
@@ -126,22 +133,111 @@ export default function TakeTestScreen() {
         }
     };
 
-    const handleSubmitTest = () => {
+    const handleSubmitTest = async () => {
         if (timerRef.current) {
             clearInterval(timerRef.current);
         }
 
         // Calculate score
         let correctCount = 0;
+        const questionResults = [];
+        
         questions.forEach((question, index) => {
-            if (selectedAnswers[index] === question.correct) {
+            const isCorrect = selectedAnswers[index] === question.correct;
+            if (isCorrect) {
                 correctCount++;
             }
+            questionResults.push({
+                questionId: question.id,
+                correct: isCorrect,
+                userAnswer: selectedAnswers[index],
+                correctAnswer: question.correct
+            });
         });
 
+        const percentage = Math.round((correctCount / questions.length) * 100);
+        
         setScore(correctCount);
         setTestCompleted(true);
         setShowResults(true);
+        setSavingResults(true);
+
+        // Generate AI insight based on performance
+        const insight = generateAIInsight(percentage, correctCount, questions.length);
+        setAiInsight(insight);
+
+        // Save to Firebase if user is logged in
+        if (user) {
+            try {
+                // Save quiz result
+                await addDoc(collection(db, 'quizResults'), {
+                    userId: user.uid,
+                    subject: subject,
+                    score: percentage,
+                    correctAnswers: correctCount,
+                    totalQuestions: questions.length,
+                    difficulty: difficulty || 'adaptive',
+                    timeSpent: (parseInt(timeLimitParam || 15) * 60) - timeRemaining,
+                    questionResults: questionResults,
+                    createdAt: new Date().toISOString()
+                });
+
+                // Update progress for this subject
+                const subjectId = subject.toLowerCase().replace(/\s+/g, '');
+                await updateProgress(user.uid, subjectId, {
+                    lastQuizScore: percentage,
+                    totalQuizzesTaken: 1, // Will be incremented in service
+                    lastActivity: new Date().toISOString(),
+                    averageScore: percentage // Service will calculate running average
+                });
+
+                console.log('Quiz results saved successfully!');
+            } catch (error) {
+                console.error('Error saving quiz results:', error);
+            }
+        }
+        
+        setSavingResults(false);
+    };
+
+    // Generate AI insight based on quiz performance
+    const generateAIInsight = (percentage, correct, total) => {
+        if (percentage >= 90) {
+            return {
+                type: 'excellent',
+                title: '🌟 Outstanding Performance!',
+                message: `You mastered this topic! Consider trying harder difficulty or exploring advanced concepts in ${subject}.`,
+                recommendation: 'Move to next level'
+            };
+        } else if (percentage >= 75) {
+            return {
+                type: 'good',
+                title: '👏 Great Job!',
+                message: `You have a solid understanding. Focus on the ${total - correct} question(s) you missed to achieve mastery.`,
+                recommendation: 'Review weak areas'
+            };
+        } else if (percentage >= 60) {
+            return {
+                type: 'average',
+                title: '💪 Keep Going!',
+                message: `You're on the right track! Practice more ${subject} problems to strengthen your understanding.`,
+                recommendation: 'Practice more'
+            };
+        } else if (percentage >= 40) {
+            return {
+                type: 'needsWork',
+                title: '📚 More Practice Needed',
+                message: `Don't worry! Review the basics of ${subject} and try again. Each attempt helps you learn.`,
+                recommendation: 'Review fundamentals'
+            };
+        } else {
+            return {
+                type: 'struggling',
+                title: '🎯 Let\'s Build Your Foundation',
+                message: `Start with beginner lessons in ${subject}. Take your time to understand core concepts before testing again.`,
+                recommendation: 'Start from basics'
+            };
+        }
     };
 
     const confirmSubmit = () => {
@@ -211,7 +307,31 @@ export default function TakeTestScreen() {
                     <Text style={styles.percentageText}>{percentage}%</Text>
                     <Text style={styles.scoreText}>{score} / {questions.length} correct</Text>
                     <Text style={styles.gradeMessage}>{gradeInfo.message}</Text>
+                    {savingResults && (
+                        <View style={styles.savingBadge}>
+                            <ActivityIndicator size="small" color={Colors.primary} />
+                            <Text style={styles.savingText}>Saving progress...</Text>
+                        </View>
+                    )}
                 </View>
+
+                {/* AI Insight Card */}
+                {aiInsight && (
+                    <View style={styles.aiInsightCard}>
+                        <View style={styles.aiInsightHeader}>
+                            <Ionicons name="sparkles" size={20} color={Colors.accent} />
+                            <Text style={styles.aiInsightLabel}>AI Learning Insight</Text>
+                        </View>
+                        <Text style={styles.aiInsightTitle}>{aiInsight.title}</Text>
+                        <Text style={styles.aiInsightMessage}>{aiInsight.message}</Text>
+                        <View style={styles.aiRecommendation}>
+                            <Ionicons name="arrow-forward-circle" size={18} color={Colors.primary} />
+                            <Text style={styles.aiRecommendationText}>
+                                Recommended: {aiInsight.recommendation}
+                            </Text>
+                        </View>
+                    </View>
+                )}
 
                 <Text style={styles.reviewTitle}>📋 Review Answers</Text>
 
@@ -877,5 +997,62 @@ const styles = StyleSheet.create({
         fontSize: FontSizes.md,
         fontWeight: '600',
         color: '#fff',
+    },
+    // AI Insight styles
+    savingBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: Spacing.md,
+        gap: Spacing.xs,
+    },
+    savingText: {
+        fontSize: FontSizes.sm,
+        color: Colors.textLight,
+    },
+    aiInsightCard: {
+        backgroundColor: Colors.surface,
+        borderRadius: BorderRadius.xl,
+        padding: Spacing.lg,
+        marginBottom: Spacing.lg,
+        borderWidth: 1,
+        borderColor: Colors.accent + '40',
+        ...Shadows.md,
+    },
+    aiInsightHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.xs,
+        marginBottom: Spacing.sm,
+    },
+    aiInsightLabel: {
+        fontSize: FontSizes.sm,
+        color: Colors.accent,
+        fontWeight: '600',
+    },
+    aiInsightTitle: {
+        fontSize: FontSizes.lg,
+        fontWeight: '700',
+        color: Colors.text,
+        marginBottom: Spacing.xs,
+    },
+    aiInsightMessage: {
+        fontSize: FontSizes.md,
+        color: Colors.textLight,
+        lineHeight: 22,
+        marginBottom: Spacing.md,
+    },
+    aiRecommendation: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: Colors.primary + '10',
+        padding: Spacing.sm,
+        borderRadius: BorderRadius.md,
+        gap: Spacing.xs,
+    },
+    aiRecommendationText: {
+        fontSize: FontSizes.sm,
+        color: Colors.primary,
+        fontWeight: '500',
     },
 });
