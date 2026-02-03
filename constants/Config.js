@@ -1,5 +1,11 @@
 // App-wide configuration constants
 
+// AI Configuration for Gemini
+export const AI_CONFIG = {
+  GEMINI_API_KEY: 'AIzaSyAsn6exmRgcZlqkbVdx1g4XpvVGu_xc6Fk', // User's Gemini API key
+  GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+};
+
 export const APP_CONFIG = {
   name: 'AdaptEd Mind',
   version: '1.0.0',

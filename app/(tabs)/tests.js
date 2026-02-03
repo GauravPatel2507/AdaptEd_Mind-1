@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
   TouchableOpacity,
   Dimensions,
-  Modal
+  Modal,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { Colors, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
 import { SUBJECTS } from '../../constants/Config';
 import { FadeInDown, FadeInUp, ZoomIn } from '../../components/Animations';
+import { generateAITest } from '../../services/aiService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -23,21 +26,54 @@ export default function TestsScreen() {
     timeLimit: 15,
     difficulty: 'adaptive'
   });
-  
+  const [isGenerating, setIsGenerating] = useState(false);
+
   // Mock test history
   const testHistory = [
     { id: 1, subject: 'Mathematics', score: 85, total: 10, date: 'Today', icon: 'calculator', color: '#6366F1' },
     { id: 2, subject: 'Science', score: 92, total: 15, date: 'Yesterday', icon: 'flask', color: '#10B981' },
     { id: 3, subject: 'Physics', score: 78, total: 10, date: '2 days ago', icon: 'nuclear', color: '#3B82F6' },
   ];
-  
+
   // Available subjects for mock tests
   const availableTests = SUBJECTS.slice(0, 8);
 
-  const startTest = () => {
-    setShowTestModal(false);
-    // Navigate to test screen (would be implemented)
-    console.log('Starting test:', { subject: selectedSubject, ...testConfig });
+  const startTest = async () => {
+    if (!selectedSubject) return;
+
+    setIsGenerating(true);
+
+    try {
+      // Generate AI test
+      const result = await generateAITest(selectedSubject.name, {
+        numberOfQuestions: testConfig.questions,
+        difficulty: testConfig.difficulty,
+        timeLimit: testConfig.timeLimit
+      });
+
+      setShowTestModal(false);
+      setIsGenerating(false);
+
+      if (result.success) {
+        // Navigate to test-taking screen with generated questions
+        router.push({
+          pathname: '/take-test',
+          params: {
+            subject: selectedSubject.name,
+            subjectColor: selectedSubject.color,
+            questions: JSON.stringify(result.data.questions),
+            timeLimit: testConfig.timeLimit,
+            difficulty: testConfig.difficulty
+          }
+        });
+      } else {
+        console.error('Failed to generate test:', result.error);
+      }
+    } catch (error) {
+      console.error('Error starting test:', error);
+      setIsGenerating(false);
+      setShowTestModal(false);
+    }
   };
 
   return (
@@ -80,7 +116,7 @@ export default function TestsScreen() {
           <Text style={styles.sectionSubtitle}>
             Select a subject to generate a personalized test
           </Text>
-          
+
           <View style={styles.subjectGrid}>
             {availableTests.map((subject, index) => (
               <ZoomIn key={subject.id} delay={300 + index * 50}>
@@ -92,10 +128,10 @@ export default function TestsScreen() {
                   }}
                 >
                   <View style={[styles.subjectTestIcon, { backgroundColor: subject.color + '20' }]}>
-                    <Ionicons 
-                      name={getSubjectIcon(subject.id)} 
-                      size={24} 
-                      color={subject.color} 
+                    <Ionicons
+                      name={getSubjectIcon(subject.id)}
+                      size={24}
+                      color={subject.color}
                     />
                   </View>
                   <Text style={styles.subjectTestName}>{subject.name}</Text>
@@ -113,7 +149,7 @@ export default function TestsScreen() {
               <Text style={styles.seeAllText}>View All</Text>
             </TouchableOpacity>
           </View>
-          
+
           {testHistory.map((test, index) => (
             <FadeInUp key={test.id} delay={500 + index * 100}>
               <TouchableOpacity style={styles.testHistoryCard}>
@@ -143,7 +179,7 @@ export default function TestsScreen() {
             <Text style={styles.insightTitle}>AI Insight</Text>
           </View>
           <Text style={styles.insightText}>
-            Based on your recent tests, we recommend focusing on <Text style={styles.insightHighlight}>Quadratic Equations</Text> 
+            Based on your recent tests, we recommend focusing on <Text style={styles.insightHighlight}>Quadratic Equations</Text>
             {' '}and <Text style={styles.insightHighlight}>Chemical Balancing</Text>. Your performance in these areas can improve by 15% with targeted practice.
           </Text>
           <TouchableOpacity style={styles.insightButton}>
@@ -170,7 +206,7 @@ export default function TestsScreen() {
                 <Ionicons name="close" size={24} color={Colors.text} />
               </TouchableOpacity>
             </View>
-            
+
             {selectedSubject && (
               <View style={[styles.selectedSubjectBadge, { backgroundColor: selectedSubject.color + '20' }]}>
                 <Ionicons name={getSubjectIcon(selectedSubject.id)} size={20} color={selectedSubject.color} />
@@ -179,7 +215,7 @@ export default function TestsScreen() {
                 </Text>
               </View>
             )}
-            
+
             {/* Number of Questions */}
             <View style={styles.configSection}>
               <Text style={styles.configLabel}>Number of Questions</Text>
@@ -203,7 +239,7 @@ export default function TestsScreen() {
                 ))}
               </View>
             </View>
-            
+
             {/* Time Limit */}
             <View style={styles.configSection}>
               <Text style={styles.configLabel}>Time Limit (minutes)</Text>
@@ -227,7 +263,7 @@ export default function TestsScreen() {
                 ))}
               </View>
             </View>
-            
+
             {/* Difficulty */}
             <View style={styles.configSection}>
               <Text style={styles.configLabel}>Difficulty</Text>
@@ -252,10 +288,23 @@ export default function TestsScreen() {
                 ))}
               </View>
             </View>
-            
-            <TouchableOpacity style={styles.startTestButton} onPress={startTest}>
-              <Text style={styles.startTestButtonText}>Generate Test</Text>
-              <Ionicons name="sparkles" size={20} color="#fff" />
+
+            <TouchableOpacity
+              style={[styles.startTestButton, isGenerating && styles.startTestButtonDisabled]}
+              onPress={startTest}
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <>
+                  <ActivityIndicator size="small" color="#fff" />
+                  <Text style={styles.startTestButtonText}>Generating...</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.startTestButtonText}>Generate Test</Text>
+                  <Ionicons name="sparkles" size={20} color="#fff" />
+                </>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -567,6 +616,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     gap: Spacing.sm,
     marginTop: Spacing.sm,
+  },
+  startTestButtonDisabled: {
+    opacity: 0.7,
   },
   startTestButtonText: {
     fontSize: FontSizes.lg,
