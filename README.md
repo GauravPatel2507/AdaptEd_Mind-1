@@ -3,7 +3,7 @@
 An AI-Driven Personalized Learning Platform built with FERN stack (Firebase, Expo, React Native, Node.js).
 
 ## Features
-
+ 
 ### 📚 Core Modules
 
 1. **Student Progress & Learning-Gap Finder** - Track progress and identify weak areas
