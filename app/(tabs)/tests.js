@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   Dimensions,
   Modal,
-  ActivityIndicator
+  ActivityIndicator,
+  RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -15,10 +16,14 @@ import { Colors, Spacing, BorderRadius, FontSizes, Shadows } from '../../constan
 import { SUBJECTS } from '../../constants/Config';
 import { FadeInDown, FadeInUp, ZoomIn } from '../../components/Animations';
 import { generateAITest } from '../../services/aiService';
+import { useAuth } from '../../contexts/AuthContext';
+import { db } from '../../config/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 const { width, height } = Dimensions.get('window');
 
 export default function TestsScreen() {
+  const { user } = useAuth();
   const [showTestModal, setShowTestModal] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [testConfig, setTestConfig] = useState({
@@ -27,13 +32,87 @@ export default function TestsScreen() {
     difficulty: 'adaptive'
   });
   const [isGenerating, setIsGenerating] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [testHistory, setTestHistory] = useState([]);
 
-  // Mock test history
-  const testHistory = [
-    { id: 1, subject: 'Mathematics', score: 85, total: 10, date: 'Today', icon: 'calculator', color: '#6366F1' },
-    { id: 2, subject: 'Science', score: 92, total: 15, date: 'Yesterday', icon: 'flask', color: '#10B981' },
-    { id: 3, subject: 'Physics', score: 78, total: 10, date: '2 days ago', icon: 'nuclear', color: '#3B82F6' },
-  ];
+  // Fetch real test history from Firebase
+  const fetchTestHistory = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const quizResultsRef = collection(db, 'quizResults');
+      const q = query(quizResultsRef, where('userId', '==', user.uid));
+      const snapshot = await getDocs(q);
+
+      const results = [];
+      snapshot.forEach(doc => {
+        results.push({ id: doc.id, ...doc.data() });
+      });
+
+      // Sort by date (newest first)
+      results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      // Transform to display format
+      const history = results.slice(0, 10).map(r => ({
+        id: r.id,
+        subject: r.subject,
+        score: r.score,
+        total: r.totalQuestions,
+        date: formatDate(r.createdAt),
+        icon: getSubjectIcon(r.subject?.toLowerCase()),
+        color: getSubjectColor(r.subject)
+      }));
+
+      setTestHistory(history);
+    } catch (error) {
+      console.log('Error fetching test history:', error.message);
+    }
+  }, [user]);
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString();
+  };
+
+  // Get subject icon
+  const getSubjectIcon = (subjectId) => {
+    const icons = {
+      mathematics: 'calculator', math: 'calculator',
+      science: 'flask',
+      english: 'book',
+      history: 'time',
+      geography: 'globe',
+      physics: 'nuclear',
+      chemistry: 'beaker',
+      biology: 'leaf',
+      'computer science': 'laptop', computer: 'laptop',
+      arts: 'color-palette'
+    };
+    return icons[subjectId] || 'school';
+  };
+
+  // Get subject color
+  const getSubjectColor = (subject) => {
+    const found = SUBJECTS.find(s => s.name.toLowerCase() === subject?.toLowerCase());
+    return found?.color || '#6366F1';
+  };
+
+  useEffect(() => {
+    fetchTestHistory();
+  }, [fetchTestHistory]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchTestHistory().finally(() => setRefreshing(false));
+  }, [fetchTestHistory]);
 
   // Available subjects for mock tests
   const availableTests = SUBJECTS.slice(0, 8);
@@ -81,6 +160,9 @@ export default function TestsScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />
+        }
       >
         {/* Header */}
         <FadeInDown delay={0} style={styles.header}>
@@ -91,16 +173,24 @@ export default function TestsScreen() {
         {/* Quick Stats */}
         <FadeInDown delay={100} style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>24</Text>
+            <Text style={styles.statValue}>{testHistory.length}</Text>
             <Text style={styles.statLabel}>Tests Taken</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>85%</Text>
+            <Text style={styles.statValue}>
+              {testHistory.length > 0
+                ? `${Math.round(testHistory.reduce((sum, t) => sum + t.score, 0) / testHistory.length)}%`
+                : '-'}
+            </Text>
             <Text style={styles.statLabel}>Avg Score</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={[styles.statValue, { color: Colors.secondary }]}>↑ 12%</Text>
-            <Text style={styles.statLabel}>Improvement</Text>
+            <Text style={[styles.statValue, { color: Colors.secondary }]}>
+              {testHistory.length >= 2
+                ? `${testHistory[0].score > testHistory[1].score ? '↑' : '↓'} ${Math.abs(testHistory[0].score - testHistory[1].score)}%`
+                : '-'}
+            </Text>
+            <Text style={styles.statLabel}>Trend</Text>
           </View>
         </FadeInDown>
 
@@ -150,26 +240,34 @@ export default function TestsScreen() {
             </TouchableOpacity>
           </View>
 
-          {testHistory.map((test, index) => (
-            <FadeInUp key={test.id} delay={500 + index * 100}>
-              <TouchableOpacity style={styles.testHistoryCard}>
-                <View style={[styles.testHistoryIcon, { backgroundColor: test.color + '20' }]}>
-                  <Ionicons name={test.icon} size={24} color={test.color} />
-                </View>
-                <View style={styles.testHistoryContent}>
-                  <Text style={styles.testHistorySubject}>{test.subject}</Text>
-                  <Text style={styles.testHistoryDate}>{test.date}</Text>
-                </View>
-                <View style={styles.testHistoryScore}>
-                  <Text style={[styles.scoreValue, getScoreColor(test.score)]}>
-                    {test.score}%
-                  </Text>
-                  <Text style={styles.scoreLabel}>{test.score}/{test.total}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
-              </TouchableOpacity>
-            </FadeInUp>
-          ))}
+          {testHistory.length > 0 ? (
+            testHistory.map((test, index) => (
+              <FadeInUp key={test.id} delay={500 + index * 100}>
+                <TouchableOpacity style={styles.testHistoryCard}>
+                  <View style={[styles.testHistoryIcon, { backgroundColor: test.color + '20' }]}>
+                    <Ionicons name={test.icon} size={24} color={test.color} />
+                  </View>
+                  <View style={styles.testHistoryContent}>
+                    <Text style={styles.testHistorySubject}>{test.subject}</Text>
+                    <Text style={styles.testHistoryDate}>{test.date}</Text>
+                  </View>
+                  <View style={styles.testHistoryScore}>
+                    <Text style={[styles.scoreValue, getScoreColor(test.score)]}>
+                      {test.score}%
+                    </Text>
+                    <Text style={styles.scoreLabel}>/{test.total} Q</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+                </TouchableOpacity>
+              </FadeInUp>
+            ))
+          ) : (
+            <View style={styles.emptyHistory}>
+              <Ionicons name="document-text-outline" size={48} color={Colors.textMuted} />
+              <Text style={styles.emptyHistoryText}>No tests taken yet</Text>
+              <Text style={styles.emptyHistorySubtext}>Select a subject above to start!</Text>
+            </View>
+          )}
         </FadeInDown>
 
         {/* Performance Insights */}
@@ -624,5 +722,23 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.lg,
     fontWeight: '600',
     color: '#fff',
+  },
+  emptyHistory: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
+    ...Shadows.sm,
+  },
+  emptyHistoryText: {
+    fontSize: FontSizes.md,
+    fontWeight: '500',
+    color: Colors.text,
+    marginTop: Spacing.sm,
+  },
+  emptyHistorySubtext: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+    marginTop: Spacing.xs,
   },
 });
