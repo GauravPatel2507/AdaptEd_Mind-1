@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
   TouchableOpacity,
   Dimensions,
   RefreshControl,
@@ -15,60 +15,42 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Colors, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
 import { SUBJECTS } from '../../constants/Config';
 import { FadeInDown, FadeInRight } from '../../components/Animations';
+import { db } from '../../config/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 const { width } = Dimensions.get('window');
 
 // Sample notifications data
 const NOTIFICATIONS = [
-  { 
-    id: 1, 
-    title: 'Quiz Completed!', 
-    message: 'You scored 92% in Mathematics Quiz', 
-    type: 'success', 
-    time: '2h ago', 
+  {
+    id: 1,
+    title: 'Quiz Completed!',
+    message: 'You scored 92% in Mathematics Quiz',
+    type: 'success',
+    time: '2h ago',
     read: false,
     icon: 'trophy',
     route: '/(tabs)/progress'
   },
-  { 
-    id: 2, 
-    title: 'New Lesson Available', 
-    message: 'Physics: Electromagnetic Waves is now available', 
-    type: 'info', 
-    time: '5h ago', 
+  {
+    id: 2,
+    title: 'New Lesson Available',
+    message: 'Physics: Electromagnetic Waves is now available',
+    type: 'info',
+    time: '5h ago',
     read: false,
     icon: 'book',
     route: '/subject/physics'
   },
-  { 
-    id: 3, 
-    title: 'Streak Reminder 🔥', 
-    message: 'Complete a lesson to keep your 7-day streak!', 
-    type: 'warning', 
-    time: '1d ago', 
+  {
+    id: 3,
+    title: 'Streak Reminder 🔥',
+    message: 'Complete a lesson to keep your streak!',
+    type: 'warning',
+    time: '1d ago',
     read: true,
     icon: 'flame',
     route: '/(tabs)/learn'
-  },
-  { 
-    id: 4, 
-    title: 'Study Buddy Request', 
-    message: 'Alex Johnson wants to connect with you', 
-    type: 'info', 
-    time: '2d ago', 
-    read: true,
-    icon: 'people',
-    route: '/(tabs)/profile'
-  },
-  { 
-    id: 5, 
-    title: 'Weekly Report Ready', 
-    message: 'Your weekly progress report is now available', 
-    type: 'success', 
-    time: '3d ago', 
-    read: true,
-    icon: 'document-text',
-    route: '/(tabs)/progress'
   },
 ];
 
@@ -78,10 +60,136 @@ export default function DashboardScreen() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState(NOTIFICATIONS);
 
-  const onRefresh = React.useCallback(() => {
+  // Real-time stats from Firebase
+  const [stats, setStats] = useState({
+    totalSubjects: 0,
+    averageScore: 0,
+    streak: 0
+  });
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [subjectProgress, setSubjectProgress] = useState({});
+
+  // Fetch real data from Firebase
+  const fetchDashboardData = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      // Fetch quiz results
+      const quizResultsRef = collection(db, 'quizResults');
+      const q = query(quizResultsRef, where('userId', '==', user.uid));
+      const snapshot = await getDocs(q);
+
+      const results = [];
+      snapshot.forEach(doc => {
+        results.push({ id: doc.id, ...doc.data() });
+      });
+
+      // Sort by date
+      results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      if (results.length > 0) {
+        // Calculate stats
+        const totalScore = results.reduce((sum, r) => sum + (r.score || 0), 0);
+        const avgScore = Math.round(totalScore / results.length);
+
+        // Get unique subjects
+        const uniqueSubjects = [...new Set(results.map(r => r.subject))];
+
+        // Calculate streak
+        const streak = calculateStreak(results);
+
+        setStats({
+          totalSubjects: uniqueSubjects.length,
+          averageScore: avgScore,
+          streak: streak
+        });
+
+        // Recent activity (last 5 tests)
+        const recent = results.slice(0, 5).map(r => ({
+          id: r.id,
+          type: 'quiz',
+          title: `${r.subject} Quiz`,
+          score: r.score,
+          time: formatTimeAgo(r.createdAt),
+          route: '/(tabs)/progress'
+        }));
+        setRecentActivity(recent);
+
+        // Subject-wise progress for cards
+        const subjectScores = {};
+        results.forEach(r => {
+          if (!subjectScores[r.subject]) {
+            subjectScores[r.subject] = { total: 0, count: 0 };
+          }
+          subjectScores[r.subject].total += r.score || 0;
+          subjectScores[r.subject].count += 1;
+        });
+
+        const progress = {};
+        Object.entries(subjectScores).forEach(([subject, data]) => {
+          progress[subject.toLowerCase()] = Math.round(data.total / data.count);
+        });
+        setSubjectProgress(progress);
+      }
+    } catch (error) {
+      console.log('Error fetching dashboard data:', error.message);
+    }
+  }, [user]);
+
+  // Calculate streak
+  const calculateStreak = (results) => {
+    if (results.length === 0) return 0;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const dates = results.map(r => {
+      const date = new Date(r.createdAt);
+      date.setHours(0, 0, 0, 0);
+      return date.getTime();
+    });
+
+    const uniqueDates = [...new Set(dates)].sort((a, b) => b - a);
+
+    let streak = 0;
+    let currentDate = today.getTime();
+
+    for (const date of uniqueDates) {
+      if (date === currentDate || date === currentDate - 86400000) {
+        streak++;
+        currentDate = date;
+      } else {
+        break;
+      }
+    }
+
+    return streak;
+  };
+
+  // Format time ago
+  const formatTimeAgo = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    fetchDashboardData().finally(() => setRefreshing(false));
+  }, [fetchDashboardData]);
 
   const greeting = () => {
     const hour = new Date().getHours();
@@ -93,7 +201,7 @@ export default function DashboardScreen() {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const markAsRead = (id) => {
-    setNotifications(prev => 
+    setNotifications(prev =>
       prev.map(n => n.id === id ? { ...n, read: true } : n)
     );
   };
@@ -126,11 +234,11 @@ export default function DashboardScreen() {
     { id: 'study', title: 'Study Path', icon: 'map-outline', color: '#8B5CF6', route: '/(tabs)/learn' },
   ];
 
-  const recentActivity = [
-    { id: 1, type: 'quiz', title: 'Math Quiz', score: 85, time: '2h ago', route: '/(tabs)/progress' },
-    { id: 2, type: 'lesson', title: 'Algebra Basics', progress: 100, time: '5h ago', route: '/subject/math' },
-    { id: 3, type: 'quiz', title: 'Science Quiz', score: 92, time: '1d ago', route: '/(tabs)/progress' },
-  ];
+  // Get subject progress percentage
+  const getSubjectProgress = (subjectId) => {
+    const subjectName = SUBJECTS.find(s => s.id === subjectId)?.name?.toLowerCase();
+    return subjectProgress[subjectName] || subjectProgress[subjectId] || 0;
+  };
 
   return (
     <View style={styles.container}>
@@ -153,7 +261,7 @@ export default function DashboardScreen() {
             <Text style={styles.greeting}>{greeting()} 👋</Text>
             <Text style={styles.userName}>{userProfile?.displayName || 'Student'}</Text>
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.notificationButton}
             onPress={() => setShowNotifications(true)}
           >
@@ -171,21 +279,21 @@ export default function DashboardScreen() {
           <View style={styles.statsGradient}>
             <View style={styles.statsContent}>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>12</Text>
-                <Text style={styles.statLabel}>Courses</Text>
+                <Text style={styles.statValue}>{stats.totalSubjects || '-'}</Text>
+                <Text style={styles.statLabel}>Subjects</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>85%</Text>
+                <Text style={styles.statValue}>{stats.averageScore ? `${stats.averageScore}%` : '-'}</Text>
                 <Text style={styles.statLabel}>Avg Score</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>7</Text>
+                <Text style={styles.statValue}>{stats.streak || 0}</Text>
                 <Text style={styles.statLabel}>Day Streak</Text>
               </View>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.statsButton}
               onPress={() => router.push('/(tabs)/progress')}
             >
@@ -226,7 +334,7 @@ export default function DashboardScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.subjectsScroll}>
             {SUBJECTS.slice(0, 5).map((subject, index) => (
               <FadeInRight key={subject.id} delay={index * 100}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.subjectCard}
                   onPress={() => router.push(`/subject/${subject.id}`)}
                 >
@@ -235,9 +343,9 @@ export default function DashboardScreen() {
                   </View>
                   <Text style={styles.subjectName}>{subject.name}</Text>
                   <View style={styles.progressBar}>
-                    <View style={[styles.progressFill, { width: `${(index + 3) * 15}%`, backgroundColor: subject.color }]} />
+                    <View style={[styles.progressFill, { width: `${getSubjectProgress(subject.id)}%`, backgroundColor: subject.color }]} />
                   </View>
-                  <Text style={styles.progressText}>{(index + 3) * 15}% Complete</Text>
+                  <Text style={styles.progressText}>{getSubjectProgress(subject.id) > 0 ? `${getSubjectProgress(subject.id)}% Avg` : 'Not started'}</Text>
                 </TouchableOpacity>
               </FadeInRight>
             ))}
@@ -252,34 +360,35 @@ export default function DashboardScreen() {
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
-          {recentActivity.map((activity, index) => (
-            <FadeInDown key={activity.id} delay={500 + index * 100}>
-              <TouchableOpacity 
-                style={styles.activityCard}
-                onPress={() => router.push(activity.route)}
-              >
-                <View style={[styles.activityIcon, { 
-                  backgroundColor: activity.type === 'quiz' 
-                    ? 'rgba(99, 102, 241, 0.1)' 
-                    : 'rgba(16, 185, 129, 0.1)' 
-                }]}>
-                  <Ionicons 
-                    name={activity.type === 'quiz' ? 'document-text' : 'play-circle'} 
-                    size={24} 
-                    color={activity.type === 'quiz' ? Colors.primary : Colors.secondary} 
-                  />
-                </View>
-                <View style={styles.activityContent}>
-                  <Text style={styles.activityTitle}>{activity.title}</Text>
-                  <Text style={styles.activityMeta}>
-                    {activity.score ? `Score: ${activity.score}%` : `Progress: ${activity.progress}%`}
-                    {' • '}{activity.time}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
-              </TouchableOpacity>
-            </FadeInDown>
-          ))}
+          {recentActivity.length > 0 ? (
+            recentActivity.map((activity, index) => (
+              <FadeInDown key={activity.id} delay={500 + index * 100}>
+                <TouchableOpacity
+                  style={styles.activityCard}
+                  onPress={() => router.push(activity.route)}
+                >
+                  <View style={[styles.activityIcon, {
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)'
+                  }]}>
+                    <Ionicons name="document-text" size={24} color={Colors.primary} />
+                  </View>
+                  <View style={styles.activityContent}>
+                    <Text style={styles.activityTitle}>{activity.title}</Text>
+                    <Text style={styles.activityMeta}>
+                      Score: {activity.score}% • {activity.time}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+                </TouchableOpacity>
+              </FadeInDown>
+            ))
+          ) : (
+            <View style={styles.emptyActivity}>
+              <Ionicons name="time-outline" size={32} color={Colors.textMuted} />
+              <Text style={styles.emptyActivityText}>No recent activity</Text>
+              <Text style={styles.emptyActivitySubtext}>Take a quiz to see your activity here!</Text>
+            </View>
+          )}
         </FadeInDown>
 
         {/* Bottom spacing for tab bar */}
@@ -303,7 +412,7 @@ export default function DashboardScreen() {
                     <Text style={styles.markAllText}>Mark all read</Text>
                   </TouchableOpacity>
                 )}
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.closeButton}
                   onPress={() => setShowNotifications(false)}
                 >
@@ -312,12 +421,12 @@ export default function DashboardScreen() {
               </View>
             </View>
 
-            <ScrollView 
+            <ScrollView
               style={styles.notificationsList}
               showsVerticalScrollIndicator={false}
             >
               {notifications.map((notification) => (
-                <TouchableOpacity 
+                <TouchableOpacity
                   key={notification.id}
                   style={[
                     styles.notificationItem,
@@ -326,13 +435,13 @@ export default function DashboardScreen() {
                   onPress={() => handleNotificationPress(notification)}
                 >
                   <View style={[
-                    styles.notificationIcon, 
+                    styles.notificationIcon,
                     { backgroundColor: `${getNotificationColor(notification.type)}15` }
                   ]}>
-                    <Ionicons 
-                      name={notification.icon} 
-                      size={24} 
-                      color={getNotificationColor(notification.type)} 
+                    <Ionicons
+                      name={notification.icon}
+                      size={24}
+                      color={getNotificationColor(notification.type)}
                     />
                   </View>
                   <View style={styles.notificationContent}>
@@ -711,5 +820,23 @@ const styles = StyleSheet.create({
   notificationTime: {
     fontSize: FontSizes.xs,
     color: Colors.textMuted,
+  },
+  emptyActivity: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
+    ...Shadows.sm,
+  },
+  emptyActivityText: {
+    fontSize: FontSizes.md,
+    fontWeight: '500',
+    color: Colors.text,
+    marginTop: Spacing.sm,
+  },
+  emptyActivitySubtext: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+    marginTop: Spacing.xs,
   },
 });
