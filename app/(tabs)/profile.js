@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,17 @@ import {
   Alert,
   Switch,
   Dimensions,
-  Modal
+  Modal,
+  ActivityIndicator,
+  RefreshControl
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { Colors, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
 import { FadeInDown } from '../../components/Animations';
+import { db } from '../../config/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 const { width } = Dimensions.get('window');
 
@@ -24,6 +28,148 @@ export default function ProfileScreen() {
   const [darkMode, setDarkMode] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  
+  // Real stats from Firebase
+  const [stats, setStats] = useState({
+    streak: 0,
+    badges: 0,
+    studyTime: 0,
+    totalTests: 0,
+    averageScore: 0
+  });
+
+  // Fetch user stats from Firebase
+  const fetchUserStats = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const quizResultsRef = collection(db, 'quizResults');
+      const q = query(quizResultsRef, where('userId', '==', user.uid));
+      const snapshot = await getDocs(q);
+
+      const results = [];
+      snapshot.forEach(doc => {
+        results.push({ id: doc.id, ...doc.data() });
+      });
+
+      if (results.length > 0) {
+        // Calculate total tests
+        const totalTests = results.length;
+
+        // Calculate average score
+        const totalScore = results.reduce((sum, r) => sum + (r.score || 0), 0);
+        const averageScore = Math.round(totalScore / totalTests);
+
+        // Calculate total study time (in hours)
+        const totalStudyTime = results.reduce((sum, r) => sum + (r.timeSpent || 0), 0);
+        const studyHours = Math.round(totalStudyTime / 60);
+
+        // Calculate streak
+        const streak = calculateStreak(results);
+
+        // Calculate badges (based on achievements)
+        const badges = calculateBadges(results, averageScore, streak);
+
+        setStats({
+          streak,
+          badges,
+          studyTime: studyHours,
+          totalTests,
+          averageScore
+        });
+      }
+    } catch (error) {
+      console.log('Error fetching user stats:', error.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [user]);
+
+  // Calculate streak
+  const calculateStreak = (results) => {
+    if (results.length === 0) return 0;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const dates = results.map(r => {
+      const date = new Date(r.createdAt);
+      date.setHours(0, 0, 0, 0);
+      return date.getTime();
+    });
+
+    const uniqueDates = [...new Set(dates)].sort((a, b) => b - a);
+
+    let streak = 0;
+    let currentDate = today.getTime();
+
+    for (const date of uniqueDates) {
+      if (date === currentDate || date === currentDate - 86400000) {
+        streak++;
+        currentDate = date;
+      } else {
+        break;
+      }
+    }
+
+    return streak;
+  };
+
+  // Calculate badges based on achievements
+  const calculateBadges = (results, avgScore, streak) => {
+    let badges = 0;
+
+    // First test badge
+    if (results.length >= 1) badges++;
+
+    // 10 tests badge
+    if (results.length >= 10) badges++;
+
+    // 50 tests badge
+    if (results.length >= 50) badges++;
+
+    // High scorer badge (avg > 80%)
+    if (avgScore >= 80) badges++;
+
+    // Perfect score badge (any 100%)
+    if (results.some(r => r.score === 100)) badges++;
+
+    // Streak badges
+    if (streak >= 3) badges++;
+    if (streak >= 7) badges++;
+    if (streak >= 30) badges++;
+
+    // Subject master (90%+ in any subject)
+    const subjectScores = {};
+    results.forEach(r => {
+      if (!subjectScores[r.subject]) {
+        subjectScores[r.subject] = { total: 0, count: 0 };
+      }
+      subjectScores[r.subject].total += r.score || 0;
+      subjectScores[r.subject].count += 1;
+    });
+
+    Object.values(subjectScores).forEach(data => {
+      if (data.total / data.count >= 90) badges++;
+    });
+
+    return badges;
+  };
+
+  useEffect(() => {
+    fetchUserStats();
+  }, [fetchUserStats]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchUserStats();
+  }, [fetchUserStats]);
 
   // Quick settings
   const settingsItems = [
@@ -63,6 +209,9 @@ export default function ProfileScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />
+        }
       >
         {/* Profile Header */}
         <FadeInDown delay={0} style={styles.profileHeader}>
@@ -85,23 +234,29 @@ export default function ProfileScreen() {
         </FadeInDown>
 
         {/* Stats Cards */}
-        <FadeInDown delay={100} style={styles.statsGrid}>
-          <View style={styles.statsCard}>
-            <Ionicons name="flame" size={24} color={Colors.error} />
-            <Text style={styles.statsValue}>7</Text>
-            <Text style={styles.statsLabel}>Day Streak</Text>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors.primary} />
           </View>
-          <View style={styles.statsCard}>
-            <Ionicons name="trophy" size={24} color={Colors.accent} />
-            <Text style={styles.statsValue}>12</Text>
-            <Text style={styles.statsLabel}>Badges</Text>
-          </View>
-          <View style={styles.statsCard}>
-            <Ionicons name="time" size={24} color={Colors.secondary} />
-            <Text style={styles.statsValue}>48h</Text>
-            <Text style={styles.statsLabel}>Study Time</Text>
-          </View>
-        </FadeInDown>
+        ) : (
+          <FadeInDown delay={100} style={styles.statsGrid}>
+            <View style={styles.statsCard}>
+              <Ionicons name="flame" size={24} color={Colors.error} />
+              <Text style={styles.statsValue}>{stats.streak}</Text>
+              <Text style={styles.statsLabel}>Day Streak</Text>
+            </View>
+            <View style={styles.statsCard}>
+              <Ionicons name="trophy" size={24} color={Colors.accent} />
+              <Text style={styles.statsValue}>{stats.badges}</Text>
+              <Text style={styles.statsLabel}>Badges</Text>
+            </View>
+            <View style={styles.statsCard}>
+              <Ionicons name="time" size={24} color={Colors.secondary} />
+              <Text style={styles.statsValue}>{stats.studyTime}h</Text>
+              <Text style={styles.statsLabel}>Study Time</Text>
+            </View>
+          </FadeInDown>
+        )}
 
         {/* Reports - Module 8 */}
         <FadeInDown delay={200}>
@@ -655,5 +810,10 @@ const styles = StyleSheet.create({
     marginTop: Spacing.lg,
     marginBottom: Spacing.lg,
     fontStyle: 'italic',
+  },
+  loadingContainer: {
+    paddingVertical: Spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
