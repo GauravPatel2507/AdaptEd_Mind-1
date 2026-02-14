@@ -8,12 +8,12 @@ const { width, height } = Dimensions.get('window');
 
 export default function SplashScreen() {
   const { user, loading } = useAuth();
-  
+
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
-  
+
   useEffect(() => {
     // Pulse animation for logo
     Animated.loop(
@@ -30,14 +30,14 @@ export default function SplashScreen() {
         }),
       ])
     ).start();
-    
+
     // Fade in logo
     Animated.timing(opacityAnim, {
       toValue: 1,
       duration: 800,
       useNativeDriver: true,
     }).start();
-    
+
     // Fade in title
     Animated.parallel([
       Animated.timing(titleOpacity, {
@@ -54,7 +54,7 @@ export default function SplashScreen() {
       }),
     ]).start();
   }, []);
-  
+
   // Show loading screen while checking auth
   if (loading) {
     return (
@@ -63,11 +63,11 @@ export default function SplashScreen() {
         <View style={styles.decorCircle1} />
         <View style={styles.decorCircle2} />
         <View style={styles.decorCircle3} />
-        
+
         {/* Logo */}
-        <Animated.View 
+        <Animated.View
           style={[
-            styles.logoContainer, 
+            styles.logoContainer,
             { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }
           ]}
         >
@@ -75,9 +75,9 @@ export default function SplashScreen() {
             <Text style={styles.logoIcon}>🎓</Text>
           </View>
         </Animated.View>
-        
+
         {/* App name */}
-        <Animated.Text 
+        <Animated.Text
           style={[
             styles.title,
             { opacity: titleOpacity, transform: [{ translateY: titleTranslateY }] }
@@ -85,16 +85,16 @@ export default function SplashScreen() {
         >
           AdaptEd Mind
         </Animated.Text>
-        
-        <Animated.Text 
+
+        <Animated.Text
           style={[
             styles.subtitle,
             { opacity: titleOpacity, transform: [{ translateY: titleTranslateY }] }
           ]}
         >
-          Learn at your own pace
+          Master CS. Build Your Future.
         </Animated.Text>
-        
+
         {/* Loading indicator */}
         <View style={styles.loadingContainer}>
           <View style={styles.loadingDots}>
@@ -106,19 +106,19 @@ export default function SplashScreen() {
       </View>
     );
   }
-  
+
   // Redirect based on auth state
   if (user) {
     return <Redirect href="/(tabs)/dashboard" />;
   }
-  
+
   return <Redirect href="/(auth)/login" />;
 }
 
 // Animated loading dot
 const LoadingDot = ({ delay }) => {
   const opacity = useRef(new Animated.Value(0.3)).current;
-  
+
   useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
@@ -138,7 +138,7 @@ const LoadingDot = ({ delay }) => {
     animation.start();
     return () => animation.stop();
   }, []);
-  
+
   return <Animated.View style={[styles.loadingDot, { opacity }]} />;
 };
 

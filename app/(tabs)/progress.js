@@ -95,19 +95,29 @@ export default function ProgressScreen() {
         // Subject-wise progress
         const subjectScores = {};
         results.forEach(result => {
-          const subject = result.subject;
-          if (!subjectScores[subject]) {
-            subjectScores[subject] = { total: 0, count: 0 };
+          const subjectName = result.subject;
+          const subjectId = result.subjectId;
+          // Use subject name as key for grouping, but also match by ID for icon/color lookup
+          const key = subjectName || subjectId || 'Unknown';
+          if (!subjectScores[key]) {
+            subjectScores[key] = { total: 0, count: 0, subjectId: subjectId };
           }
-          subjectScores[subject].total += result.score || 0;
-          subjectScores[subject].count += 1;
+          subjectScores[key].total += result.score || 0;
+          subjectScores[key].count += 1;
+          // Prefer the stored subjectId if available
+          if (subjectId && !subjectScores[key].subjectId) {
+            subjectScores[key].subjectId = subjectId;
+          }
         });
 
         const subjectData = Object.entries(subjectScores).map(([name, data]) => {
-          const subjectInfo = SUBJECTS.find(s => s.name === name) || {};
+          // Look up subject info by stored subjectId first, then by name
+          const subjectInfo = SUBJECTS.find(s => s.id === data.subjectId)
+            || SUBJECTS.find(s => s.name === name)
+            || {};
           return {
-            id: subjectInfo.id || name.toLowerCase(),
-            name,
+            id: subjectInfo.id || data.subjectId || name.toLowerCase(),
+            name: subjectInfo.name || name,
             progress: Math.round(data.total / data.count),
             tests: data.count,
             color: subjectInfo.color || '#6366F1'
@@ -220,19 +230,8 @@ export default function ProgressScreen() {
   };
 
   const getSubjectIcon = (subjectId) => {
-    const icons = {
-      math: 'calculator', mathematics: 'calculator',
-      science: 'flask',
-      english: 'book',
-      history: 'time',
-      geography: 'globe',
-      physics: 'nuclear',
-      chemistry: 'beaker',
-      biology: 'leaf',
-      computer: 'laptop', 'computer science': 'laptop',
-      arts: 'color-palette'
-    };
-    return icons[subjectId?.toLowerCase()] || 'school';
+    const subject = SUBJECTS.find(s => s.id === subjectId || s.name.toLowerCase() === subjectId?.toLowerCase());
+    return subject?.icon || 'school';
   };
 
   const formatDate = (dateString) => {

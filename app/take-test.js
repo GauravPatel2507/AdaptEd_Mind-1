@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Colors, Spacing, BorderRadius, FontSizes, Shadows } from '../constants/Colors';
+import { SUBJECTS } from '../constants/Config';
 import { generateAITest } from '../services/aiService';
 import { updateProgress } from '../services/progressService';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,7 +24,7 @@ const { width, height } = Dimensions.get('window');
 
 export default function TakeTestScreen() {
     const params = useLocalSearchParams();
-    const { subject, subjectColor, questions: questionsParam, timeLimit: timeLimitParam, difficulty } = params;
+    const { subject, subjectId: subjectIdParam, subjectColor, questions: questionsParam, timeLimit: timeLimitParam, difficulty } = params;
     const { user } = useAuth();
 
     const [isLoading, setIsLoading] = useState(true);
@@ -141,7 +142,7 @@ export default function TakeTestScreen() {
         // Calculate score
         let correctCount = 0;
         const questionResults = [];
-        
+
         questions.forEach((question, index) => {
             const isCorrect = selectedAnswers[index] === question.correct;
             if (isCorrect) {
@@ -156,7 +157,7 @@ export default function TakeTestScreen() {
         });
 
         const percentage = Math.round((correctCount / questions.length) * 100);
-        
+
         setScore(correctCount);
         setTestCompleted(true);
         setShowResults(true);
@@ -173,6 +174,7 @@ export default function TakeTestScreen() {
                 await addDoc(collection(db, 'quizResults'), {
                     userId: user.uid,
                     subject: subject,
+                    subjectId: subjectIdParam || (SUBJECTS.find(s => s.name === subject)?.id) || subject.toLowerCase().replace(/\s+/g, ''),
                     score: percentage,
                     correctAnswers: correctCount,
                     totalQuestions: questions.length,
@@ -183,8 +185,8 @@ export default function TakeTestScreen() {
                 });
 
                 // Update progress for this subject
-                const subjectId = subject.toLowerCase().replace(/\s+/g, '');
-                await updateProgress(user.uid, subjectId, {
+                const resolvedSubjectId = subjectIdParam || (SUBJECTS.find(s => s.name === subject)?.id) || subject.toLowerCase().replace(/\s+/g, '');
+                await updateProgress(user.uid, resolvedSubjectId, {
                     lastQuizScore: percentage,
                     totalQuizzesTaken: 1, // Will be incremented in service
                     lastActivity: new Date().toISOString(),
@@ -196,7 +198,7 @@ export default function TakeTestScreen() {
                 console.error('Error saving quiz results:', error);
             }
         }
-        
+
         setSavingResults(false);
     };
 

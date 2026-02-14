@@ -3,13 +3,41 @@ import { db } from '../config/firebase';
 import { collection, doc, getDoc, getDocs, query, where, limit, addDoc } from 'firebase/firestore';
 import { DIFFICULTY_LEVELS, QUIZ_CONFIG, AI_CONFIG } from '../constants/Config';
 
+// Shuffle the options within each question so the correct answer isn't always at index 0
+const shuffleQuestionOptions = (questions) => {
+  return questions.map(q => {
+    const correctAnswer = q.options[q.correct];
+    // Fisher-Yates shuffle
+    const shuffled = [...q.options];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return { ...q, options: shuffled, correct: shuffled.indexOf(correctAnswer) };
+  });
+};
+
+// Compute difficulty level from user's average score
+const computeAdaptiveDifficulty = (avgScore) => {
+  if (avgScore === null || avgScore === undefined) return 'medium';
+  if (avgScore >= 80) return 'hard';
+  if (avgScore >= 60) return 'medium';
+  return 'easy';
+};
+
 // Generate AI-powered test using Gemini API
 export const generateAITest = async (subject, config = {}) => {
   const {
     numberOfQuestions = 10,
     difficulty = 'medium',
-    timeLimit = 15
+    timeLimit = 15,
+    userAvgScore = null
   } = config;
+
+  // If adaptive, compute difficulty from the user's average score
+  const effectiveDifficulty = difficulty === 'adaptive'
+    ? computeAdaptiveDifficulty(userAvgScore)
+    : difficulty;
 
   const difficultyDescription = {
     easy: 'basic and straightforward, suitable for beginners',
@@ -19,7 +47,7 @@ export const generateAITest = async (subject, config = {}) => {
   };
 
   const prompt = `Generate exactly ${numberOfQuestions} multiple choice questions for a ${subject} test.
-Difficulty level: ${difficultyDescription[difficulty] || difficultyDescription.medium}
+Difficulty level: ${difficultyDescription[effectiveDifficulty] || difficultyDescription.medium}
 
 Return ONLY a valid JSON array with this exact structure, no other text:
 [
@@ -35,8 +63,9 @@ Return ONLY a valid JSON array with this exact structure, no other text:
 Requirements:
 - Each question MUST have exactly 4 options
 - "correct" is the 0-based index of the correct answer (0, 1, 2, or 3)
+- IMPORTANT: Vary the position of the correct answer randomly across questions (don't always put it at index 0)
 - Questions should test knowledge of ${subject}
-- Make questions educational and appropriate for students
+- Make questions educational and appropriate for students aged 16+
 - Vary the topics within ${subject}
 - Include practical application questions where applicable`;
 
@@ -66,7 +95,7 @@ Requirements:
       if (response.status === 429) {
         console.log('API rate limit reached, using fallback questions');
       }
-      return generateFallbackTest(subject, numberOfQuestions, difficulty);
+      return generateFallbackTest(subject, numberOfQuestions, effectiveDifficulty);
     }
 
     const data = await response.json();
@@ -99,21 +128,21 @@ Requirements:
     }
 
     // Ensure each question has required fields
-    const validatedQuestions = questions.map((q, index) => ({
+    const validatedQuestions = shuffleQuestionOptions(questions.map((q, index) => ({
       id: q.id || index + 1,
       question: q.question,
       options: q.options,
       correct: q.correct,
       explanation: q.explanation || 'No explanation provided',
-      difficulty: difficulty
-    }));
+      difficulty: effectiveDifficulty
+    })));
 
     return {
       success: true,
       data: {
         questions: validatedQuestions,
         subject,
-        difficulty,
+        difficulty: effectiveDifficulty,
         timeLimit,
         totalQuestions: validatedQuestions.length,
         generatedAt: new Date().toISOString()
@@ -125,140 +154,141 @@ Requirements:
     console.log('Using fallback questions due to:', error.message);
 
     // Fallback to sample questions if API fails
-    return generateFallbackTest(subject, numberOfQuestions, difficulty);
+    return generateFallbackTest(subject, numberOfQuestions, effectiveDifficulty);
   }
 };
 
 // Fallback test generation using predefined questions
 const generateFallbackTest = (subject, count, difficulty) => {
   const fallbackQuestions = {
-    Mathematics: [
-      { id: 1, question: 'What is 15 × 8?', options: ['120', '125', '110', '130'], correct: 0, explanation: '15 × 8 = 120' },
-      { id: 2, question: 'Solve: x + 7 = 15', options: ['x = 8', 'x = 22', 'x = 7', 'x = 9'], correct: 0, explanation: 'x = 15 - 7 = 8' },
-      { id: 3, question: 'What is the square root of 144?', options: ['12', '14', '11', '13'], correct: 0, explanation: '√144 = 12' },
-      { id: 4, question: 'What is 25% of 200?', options: ['50', '40', '25', '75'], correct: 0, explanation: '25% of 200 = 0.25 × 200 = 50' },
-      { id: 5, question: 'What is the value of π (pi) approximately?', options: ['3.14', '2.14', '4.14', '3.41'], correct: 0, explanation: 'π ≈ 3.14159...' },
-      { id: 6, question: 'What is 7² + 3²?', options: ['58', '49', '52', '40'], correct: 0, explanation: '49 + 9 = 58' },
-      { id: 7, question: 'If a triangle has angles 60° and 80°, what is the third angle?', options: ['40°', '50°', '60°', '30°'], correct: 0, explanation: '180° - 60° - 80° = 40°' },
-      { id: 8, question: 'What is the area of a rectangle with length 8 and width 5?', options: ['40', '26', '35', '45'], correct: 0, explanation: 'Area = 8 × 5 = 40' },
-      { id: 9, question: 'Simplify: 3(x + 4)', options: ['3x + 12', '3x + 4', 'x + 12', '3x + 7'], correct: 0, explanation: '3(x + 4) = 3x + 12' },
-      { id: 10, question: 'What is 1000 ÷ 25?', options: ['40', '45', '35', '50'], correct: 0, explanation: '1000 ÷ 25 = 40' },
+    'Programming in C': [
+      { id: 1, question: 'Which keyword is used to prevent modification of a variable in C?', options: ['const', 'static', 'volatile', 'register'], correct: 0, explanation: 'const declares a read-only variable' },
+      { id: 2, question: 'What is the size of int on a 32-bit system?', options: ['4 bytes', '2 bytes', '8 bytes', '1 byte'], correct: 0, explanation: 'int is typically 4 bytes on 32-bit systems' },
+      { id: 3, question: 'What does malloc() return on failure?', options: ['NULL', '0', '-1', 'undefined'], correct: 0, explanation: 'malloc returns NULL when memory allocation fails' },
+      { id: 4, question: 'Which operator is used to access a member of a structure through a pointer?', options: ['->', '.', '*', '&'], correct: 0, explanation: 'Arrow operator (->) dereferences and accesses structure members' },
+      { id: 5, question: 'What is the output of printf("%d", sizeof(char))?', options: ['1', '2', '4', '8'], correct: 0, explanation: 'char is always 1 byte by definition' },
+      { id: 6, question: 'Which function is used to concatenate two strings in C?', options: ['strcat()', 'strcmp()', 'strcpy()', 'strlen()'], correct: 0, explanation: 'strcat appends one string to another' },
+      { id: 7, question: 'What is a dangling pointer?', options: ['Pointer to freed memory', 'Null pointer', 'Wild pointer', 'Void pointer'], correct: 0, explanation: 'A dangling pointer refers to memory that has been freed' },
+      { id: 8, question: 'Which header file is needed for dynamic memory allocation?', options: ['stdlib.h', 'stdio.h', 'string.h', 'math.h'], correct: 0, explanation: 'stdlib.h provides malloc, calloc, realloc, free' },
+      { id: 9, question: 'What does the static keyword do for a local variable?', options: ['Preserves value between calls', 'Makes it global', 'Makes it constant', 'Allocates on heap'], correct: 0, explanation: 'Static local variables retain their value between function calls' },
+      { id: 10, question: 'What is the difference between ++i and i++?', options: ['Pre vs post increment', 'No difference', 'Speed difference', 'Type difference'], correct: 0, explanation: '++i increments before use, i++ increments after use' },
     ],
-    Science: [
-      { id: 1, question: 'What is the chemical symbol for water?', options: ['H₂O', 'CO₂', 'NaCl', 'O₂'], correct: 0, explanation: 'Water is H₂O (2 hydrogen, 1 oxygen)' },
-      { id: 2, question: 'What planet is known as the Red Planet?', options: ['Mars', 'Venus', 'Jupiter', 'Saturn'], correct: 0, explanation: 'Mars appears red due to iron oxide on its surface' },
-      { id: 3, question: 'What is the powerhouse of the cell?', options: ['Mitochondria', 'Nucleus', 'Ribosome', 'Chloroplast'], correct: 0, explanation: 'Mitochondria produce ATP energy' },
-      { id: 4, question: 'What gas do plants absorb from the atmosphere?', options: ['Carbon dioxide', 'Oxygen', 'Nitrogen', 'Hydrogen'], correct: 0, explanation: 'Plants use CO₂ for photosynthesis' },
-      { id: 5, question: 'What is the speed of light?', options: ['300,000 km/s', '150,000 km/s', '500,000 km/s', '200,000 km/s'], correct: 0, explanation: 'Light travels at ~300,000 km/s' },
-      { id: 6, question: 'How many bones are in the adult human body?', options: ['206', '186', '226', '256'], correct: 0, explanation: 'Adults have 206 bones' },
-      { id: 7, question: 'What is the largest organ in the human body?', options: ['Skin', 'Liver', 'Heart', 'Brain'], correct: 0, explanation: 'Skin is the largest organ' },
-      { id: 8, question: 'What force keeps planets orbiting the sun?', options: ['Gravity', 'Magnetism', 'Friction', 'Inertia'], correct: 0, explanation: 'Gravity pulls planets toward the sun' },
-      { id: 9, question: 'What is the pH of pure water?', options: ['7', '0', '14', '1'], correct: 0, explanation: 'Pure water is neutral with pH 7' },
-      { id: 10, question: 'What type of energy does the sun produce?', options: ['Nuclear', 'Chemical', 'Mechanical', 'Electrical'], correct: 0, explanation: 'The sun produces nuclear fusion energy' },
+    'Data Structures': [
+      { id: 1, question: 'What is the time complexity of searching in a balanced BST?', options: ['O(log n)', 'O(n)', 'O(1)', 'O(n²)'], correct: 0, explanation: 'Balanced BST halves search space each step' },
+      { id: 2, question: 'Which data structure uses LIFO principle?', options: ['Stack', 'Queue', 'Array', 'Linked List'], correct: 0, explanation: 'Stack uses Last In, First Out' },
+      { id: 3, question: 'What is the worst-case time complexity of insertion in an unsorted array?', options: ['O(1)', 'O(n)', 'O(log n)', 'O(n²)'], correct: 0, explanation: 'Inserting at end of unsorted array is O(1)' },
+      { id: 4, question: 'Which traversal of BST gives sorted output?', options: ['Inorder', 'Preorder', 'Postorder', 'Level order'], correct: 0, explanation: 'Inorder traversal visits left-root-right giving sorted order' },
+      { id: 5, question: 'What is the maximum number of nodes in a binary tree of height h?', options: ['2^(h+1) - 1', '2h', 'h²', '2^h'], correct: 0, explanation: 'A full binary tree of height h has 2^(h+1)-1 nodes' },
+      { id: 6, question: 'Which data structure is used for BFS?', options: ['Queue', 'Stack', 'Array', 'Heap'], correct: 0, explanation: 'BFS uses a queue for level-by-level traversal' },
+      { id: 7, question: 'What is the time complexity of accessing an element in a hash table (average)?', options: ['O(1)', 'O(n)', 'O(log n)', 'O(n²)'], correct: 0, explanation: 'Hash tables provide constant-time average lookup' },
+      { id: 8, question: 'Which data structure is best for implementing a priority queue?', options: ['Heap', 'Stack', 'Queue', 'Linked List'], correct: 0, explanation: 'Heaps efficiently support priority queue operations' },
+      { id: 9, question: 'What is a complete binary tree?', options: ['All levels filled except possibly last', 'All leaves at same level', 'Every node has 2 children', 'Height is log n'], correct: 0, explanation: 'Complete tree fills levels left to right, last level may be partial' },
+      { id: 10, question: 'What is the space complexity of an adjacency matrix for a graph with V vertices?', options: ['O(V²)', 'O(V)', 'O(V+E)', 'O(E)'], correct: 0, explanation: 'Adjacency matrix requires V×V space' },
     ],
-    English: [
-      { id: 1, question: 'What is a noun?', options: ['A naming word', 'An action word', 'A describing word', 'A joining word'], correct: 0, explanation: 'A noun is a word that names a person, place, thing, or idea' },
-      { id: 2, question: 'Which is the correct spelling?', options: ['Necessary', 'Neccessary', 'Necesary', 'Neccesary'], correct: 0, explanation: 'Necessary has one C and two Ss' },
-      { id: 3, question: 'What is the past tense of "go"?', options: ['Went', 'Goed', 'Gone', 'Going'], correct: 0, explanation: 'Go is an irregular verb; its past tense is "went"' },
-      { id: 4, question: 'What is a synonym for "happy"?', options: ['Joyful', 'Sad', 'Angry', 'Tired'], correct: 0, explanation: 'Joyful means the same as happy' },
-      { id: 5, question: 'Which sentence is grammatically correct?', options: ['She and I went to the store', 'Me and her went to the store', 'Her and me went to the store', 'Me and she went to the store'], correct: 0, explanation: 'Use subject pronouns (She, I) as subjects of a sentence' },
-      { id: 6, question: 'What is an antonym for "ancient"?', options: ['Modern', 'Old', 'Historic', 'Traditional'], correct: 0, explanation: 'Modern is the opposite of ancient' },
-      { id: 7, question: 'What type of word is "quickly"?', options: ['Adverb', 'Adjective', 'Noun', 'Verb'], correct: 0, explanation: 'Quickly describes how an action is done (adverb)' },
-      { id: 8, question: 'What is a metaphor?', options: ['A direct comparison without like/as', 'A comparison using like/as', 'An exaggeration', 'A sound word'], correct: 0, explanation: 'A metaphor directly states one thing IS another' },
-      { id: 9, question: 'Which is correct?', options: ['Their going to the park', 'There going to the park', 'They\'re going to the park', 'Theyre going to the park'], correct: 2, explanation: 'They\'re = They are' },
-      { id: 10, question: 'What is alliteration?', options: ['Repetition of consonant sounds', 'Repetition of vowel sounds', 'Rhyming words', 'Opposite meanings'], correct: 0, explanation: 'Alliteration is the repetition of initial consonant sounds' },
+    'Database Management': [
+      { id: 1, question: 'What does SQL stand for?', options: ['Structured Query Language', 'Simple Query Language', 'Standard Query Logic', 'System Query Language'], correct: 0, explanation: 'SQL is Structured Query Language for managing databases' },
+      { id: 2, question: 'Which normal form eliminates partial dependencies?', options: ['2NF', '1NF', '3NF', 'BCNF'], correct: 0, explanation: '2NF removes partial dependencies on primary key' },
+      { id: 3, question: 'What is a foreign key?', options: ['Reference to primary key in another table', 'Primary key of current table', 'Unique key', 'Candidate key'], correct: 0, explanation: 'Foreign key establishes relationships between tables' },
+      { id: 4, question: 'Which SQL command is used to remove a table?', options: ['DROP', 'DELETE', 'REMOVE', 'TRUNCATE'], correct: 0, explanation: 'DROP TABLE removes the entire table structure' },
+      { id: 5, question: 'What does ACID stand for in database transactions?', options: ['Atomicity, Consistency, Isolation, Durability', 'Access, Control, Integrity, Data', 'Atomicity, Control, Isolation, Data', 'Access, Consistency, Integrity, Durability'], correct: 0, explanation: 'ACID properties ensure reliable transaction processing' },
+      { id: 6, question: 'Which join returns all rows from both tables?', options: ['FULL OUTER JOIN', 'INNER JOIN', 'LEFT JOIN', 'RIGHT JOIN'], correct: 0, explanation: 'Full outer join returns all matching and non-matching rows' },
+      { id: 7, question: 'What is normalization?', options: ['Reducing data redundancy', 'Adding indexes', 'Creating backups', 'Encrypting data'], correct: 0, explanation: 'Normalization organizes data to reduce redundancy' },
+      { id: 8, question: 'Which SQL clause is used to filter grouped results?', options: ['HAVING', 'WHERE', 'GROUP BY', 'ORDER BY'], correct: 0, explanation: 'HAVING filters after GROUP BY, WHERE filters before' },
+      { id: 9, question: 'What is a deadlock?', options: ['Circular wait between transactions', 'Database crash', 'Query timeout', 'Lock timeout'], correct: 0, explanation: 'Deadlock occurs when transactions wait circularly for each other' },
+      { id: 10, question: 'What type of database is MongoDB?', options: ['NoSQL document database', 'Relational database', 'Graph database', 'Time-series database'], correct: 0, explanation: 'MongoDB stores data as JSON-like documents' },
     ],
-    History: [
-      { id: 1, question: 'In which year did World War II end?', options: ['1945', '1944', '1946', '1943'], correct: 0, explanation: 'WWII ended in 1945 after Japan surrendered' },
-      { id: 2, question: 'Who was the first President of the United States?', options: ['George Washington', 'Abraham Lincoln', 'Thomas Jefferson', 'John Adams'], correct: 0, explanation: 'George Washington served from 1789-1797' },
-      { id: 3, question: 'The Great Wall of China was primarily built to protect against whom?', options: ['Mongol invaders', 'Japanese invaders', 'Korean invaders', 'Indian invaders'], correct: 0, explanation: 'The wall was built to protect against northern invasions' },
-      { id: 4, question: 'Who discovered America in 1492?', options: ['Christopher Columbus', 'Amerigo Vespucci', 'Leif Erikson', 'Marco Polo'], correct: 0, explanation: 'Columbus reached the Americas in 1492' },
-      { id: 5, question: 'The French Revolution began in which year?', options: ['1789', '1776', '1799', '1812'], correct: 0, explanation: 'The French Revolution started in 1789' },
-      { id: 6, question: 'Who was known as the "Iron Lady"?', options: ['Margaret Thatcher', 'Queen Victoria', 'Indira Gandhi', 'Golda Meir'], correct: 0, explanation: 'Margaret Thatcher, UK PM, was called the Iron Lady' },
-      { id: 7, question: 'The Renaissance period began in which country?', options: ['Italy', 'France', 'Germany', 'England'], correct: 0, explanation: 'The Renaissance began in Italy around the 14th century' },
-      { id: 8, question: 'Who wrote the Declaration of Independence?', options: ['Thomas Jefferson', 'George Washington', 'Benjamin Franklin', 'John Adams'], correct: 0, explanation: 'Jefferson was the primary author' },
-      { id: 9, question: 'The Berlin Wall fell in which year?', options: ['1989', '1991', '1985', '1987'], correct: 0, explanation: 'The Berlin Wall fell on November 9, 1989' },
-      { id: 10, question: 'Who was the first woman to fly solo across the Atlantic?', options: ['Amelia Earhart', 'Harriet Quimby', 'Bessie Coleman', 'Jacqueline Cochran'], correct: 0, explanation: 'Amelia Earhart completed this flight in 1932' },
+    'OOP (Java/Python/C++)': [
+      { id: 1, question: 'What is encapsulation?', options: ['Bundling data and methods together', 'Inheriting from parent', 'Method overriding', 'Using interfaces'], correct: 0, explanation: 'Encapsulation wraps data and methods into a single unit' },
+      { id: 2, question: 'What is polymorphism?', options: ['Same interface, different implementations', 'Multiple inheritance', 'Data hiding', 'Object creation'], correct: 0, explanation: 'Polymorphism allows objects to take many forms' },
+      { id: 3, question: 'Which OOP principle is achieved through inheritance?', options: ['Code reusability', 'Data hiding', 'Abstraction', 'Polymorphism'], correct: 0, explanation: 'Inheritance allows reuse of parent class code' },
+      { id: 4, question: 'What is an abstract class?', options: ['Class that cannot be instantiated', 'Class with no methods', 'Private class', 'Final class'], correct: 0, explanation: 'Abstract classes cannot be instantiated directly' },
+      { id: 5, question: 'What does the SOLID S stand for?', options: ['Single Responsibility', 'Simple', 'Structured', 'Serializable'], correct: 0, explanation: 'A class should have only one reason to change' },
+      { id: 6, question: 'What is method overloading?', options: ['Same name, different parameters', 'Same name, same parameters', 'Overriding parent method', 'Static method'], correct: 0, explanation: 'Overloading uses same method name with different signatures' },
+      { id: 7, question: 'What is the purpose of a constructor?', options: ['Initialize object state', 'Destroy object', 'Copy object', 'Compare objects'], correct: 0, explanation: 'Constructors initialize object attributes when created' },
+      { id: 8, question: 'Which design pattern ensures only one instance?', options: ['Singleton', 'Factory', 'Observer', 'Strategy'], correct: 0, explanation: 'Singleton restricts class instantiation to one object' },
+      { id: 9, question: 'What is an interface?', options: ['Contract with abstract methods', 'Concrete class', 'Type of variable', 'Design pattern'], correct: 0, explanation: 'Interfaces define method signatures without implementation' },
+      { id: 10, question: 'What is the diamond problem?', options: ['Ambiguity in multiple inheritance', 'Memory leak', 'Null pointer issue', 'Stack overflow'], correct: 0, explanation: 'Diamond problem arises when a class inherits from two classes with common ancestor' },
     ],
-    Geography: [
-      { id: 1, question: 'What is the largest continent by area?', options: ['Asia', 'Africa', 'North America', 'Europe'], correct: 0, explanation: 'Asia is about 44.58 million km²' },
-      { id: 2, question: 'Which river is the longest in the world?', options: ['Nile', 'Amazon', 'Yangtze', 'Mississippi'], correct: 0, explanation: 'The Nile is approximately 6,650 km long' },
-      { id: 3, question: 'What is the capital of Australia?', options: ['Canberra', 'Sydney', 'Melbourne', 'Brisbane'], correct: 0, explanation: 'Canberra is the capital, not Sydney' },
-      { id: 4, question: 'Which is the smallest country in the world?', options: ['Vatican City', 'Monaco', 'San Marino', 'Liechtenstein'], correct: 0, explanation: 'Vatican City is only 0.44 km²' },
-      { id: 5, question: 'Mount Everest is located in which mountain range?', options: ['Himalayas', 'Andes', 'Alps', 'Rockies'], correct: 0, explanation: 'Everest is in the Himalayas on the Nepal-Tibet border' },
-      { id: 6, question: 'What is the largest ocean?', options: ['Pacific Ocean', 'Atlantic Ocean', 'Indian Ocean', 'Arctic Ocean'], correct: 0, explanation: 'The Pacific covers about 165 million km²' },
-      { id: 7, question: 'Which country has the largest population?', options: ['India', 'China', 'USA', 'Indonesia'], correct: 0, explanation: 'India surpassed China as most populous in 2023' },
-      { id: 8, question: 'The Sahara Desert is located in which continent?', options: ['Africa', 'Asia', 'Australia', 'South America'], correct: 0, explanation: 'The Sahara covers much of North Africa' },
-      { id: 9, question: 'What is the capital of Japan?', options: ['Tokyo', 'Osaka', 'Kyoto', 'Yokohama'], correct: 0, explanation: 'Tokyo has been Japan\'s capital since 1868' },
-      { id: 10, question: 'Which country is known as the Land of the Rising Sun?', options: ['Japan', 'China', 'South Korea', 'Thailand'], correct: 0, explanation: 'Japan\'s name means "origin of the sun"' },
+    'Operating Systems': [
+      { id: 1, question: 'What is a process?', options: ['Program in execution', 'Code on disk', 'Thread', 'File'], correct: 0, explanation: 'A process is an instance of a running program' },
+      { id: 2, question: 'Which scheduling algorithm is non-preemptive?', options: ['FCFS', 'Round Robin', 'SRTF', 'Priority (preemptive)'], correct: 0, explanation: 'First Come First Served runs to completion' },
+      { id: 3, question: 'What is thrashing?', options: ['Excessive page swapping', 'CPU overheating', 'Disk failure', 'Network congestion'], correct: 0, explanation: 'Thrashing occurs when system spends more time paging than executing' },
+      { id: 4, question: 'What is a semaphore?', options: ['Synchronization mechanism', 'Memory segment', 'Process type', 'File descriptor'], correct: 0, explanation: 'Semaphores control access to shared resources' },
+      { id: 5, question: 'What does virtual memory provide?', options: ['Illusion of large memory', 'Faster CPU', 'Better graphics', 'Network speed'], correct: 0, explanation: 'Virtual memory uses disk to extend available RAM' },
+      { id: 6, question: 'Which condition is NOT required for deadlock?', options: ['Preemption', 'Mutual exclusion', 'Hold and wait', 'Circular wait'], correct: 0, explanation: 'No preemption (not preemption) is required — preemption prevents deadlock' },
+      { id: 7, question: 'What is context switching?', options: ['Saving/restoring process state', 'Switching users', 'Changing OS', 'Disk swapping'], correct: 0, explanation: 'Context switch saves one process state and loads another' },
+      { id: 8, question: 'What is paging?', options: ['Dividing memory into fixed-size blocks', 'Sorting memory', 'Compressing memory', 'Encrypting memory'], correct: 0, explanation: 'Paging divides memory into equal-sized pages' },
+      { id: 9, question: 'What is the purpose of a page table?', options: ['Map virtual to physical addresses', 'Store file names', 'Schedule processes', 'Manage devices'], correct: 0, explanation: 'Page table translates virtual addresses to physical' },
+      { id: 10, question: 'What is a zombie process?', options: ['Terminated but not reaped', 'Sleeping process', 'Background process', 'Root process'], correct: 0, explanation: 'Zombie process finished but parent hasn\'t collected its exit status' },
     ],
-    Physics: [
-      { id: 1, question: 'What is the SI unit of force?', options: ['Newton', 'Joule', 'Watt', 'Pascal'], correct: 0, explanation: 'Force is measured in Newtons (N)' },
-      { id: 2, question: 'What is Newton\'s First Law also known as?', options: ['Law of Inertia', 'Law of Gravity', 'Law of Motion', 'Law of Energy'], correct: 0, explanation: 'Objects at rest stay at rest (inertia)' },
-      { id: 3, question: 'What is the formula for kinetic energy?', options: ['½mv²', 'mgh', 'F×d', 'ma'], correct: 0, explanation: 'KE = ½ × mass × velocity²' },
-      { id: 4, question: 'What is the acceleration due to gravity on Earth?', options: ['9.8 m/s²', '10.8 m/s²', '8.8 m/s²', '11.8 m/s²'], correct: 0, explanation: 'g ≈ 9.8 m/s² on Earth' },
-      { id: 5, question: 'What type of wave is sound?', options: ['Longitudinal', 'Transverse', 'Electromagnetic', 'Standing'], correct: 0, explanation: 'Sound is a longitudinal mechanical wave' },
-      { id: 6, question: 'What is the SI unit of electric current?', options: ['Ampere', 'Volt', 'Ohm', 'Watt'], correct: 0, explanation: 'Current is measured in Amperes (A)' },
-      { id: 7, question: 'What is Ohm\'s Law?', options: ['V = IR', 'P = VI', 'F = ma', 'E = mc²'], correct: 0, explanation: 'Voltage = Current × Resistance' },
-      { id: 8, question: 'What is the speed of sound in air at room temperature?', options: ['343 m/s', '300 m/s', '400 m/s', '500 m/s'], correct: 0, explanation: 'Sound travels at ~343 m/s in air' },
-      { id: 9, question: 'What happens to resistance when temperature increases in a conductor?', options: ['Increases', 'Decreases', 'Stays same', 'Becomes zero'], correct: 0, explanation: 'Higher temperature means more resistance in conductors' },
-      { id: 10, question: 'What is the unit of frequency?', options: ['Hertz', 'Newton', 'Joule', 'Watt'], correct: 0, explanation: 'Frequency is measured in Hertz (Hz)' },
+    'Computer Networks': [
+      { id: 1, question: 'How many layers does the OSI model have?', options: ['7', '5', '4', '6'], correct: 0, explanation: 'OSI has 7 layers from Physical to Application' },
+      { id: 2, question: 'Which protocol is used for reliable data transfer?', options: ['TCP', 'UDP', 'IP', 'ICMP'], correct: 0, explanation: 'TCP provides reliable, ordered delivery' },
+      { id: 3, question: 'What is the default port for HTTP?', options: ['80', '443', '21', '25'], correct: 0, explanation: 'HTTP uses port 80 by default' },
+      { id: 4, question: 'What does DNS do?', options: ['Resolves domain names to IPs', 'Encrypts data', 'Routes packets', 'Manages emails'], correct: 0, explanation: 'DNS translates domain names to IP addresses' },
+      { id: 5, question: 'Which layer is responsible for routing?', options: ['Network layer', 'Transport layer', 'Data link layer', 'Application layer'], correct: 0, explanation: 'Network layer (Layer 3) handles routing' },
+      { id: 6, question: 'What is CIDR notation?', options: ['IP addressing with prefix length', 'Encryption standard', 'Routing protocol', 'DNS format'], correct: 0, explanation: 'CIDR uses IP/prefix (e.g., 192.168.1.0/24) for subnetting' },
+      { id: 7, question: 'What is the purpose of ARP?', options: ['Map IP to MAC address', 'Map URL to IP', 'Encrypt packets', 'Route data'], correct: 0, explanation: 'ARP resolves IP addresses to hardware MAC addresses' },
+      { id: 8, question: 'Which topology has a single point of failure?', options: ['Star', 'Mesh', 'Ring', 'Bus'], correct: 0, explanation: 'Star topology fails if the central hub/switch fails' },
+      { id: 9, question: 'What is NAT?', options: ['Network Address Translation', 'Network Access Terminal', 'Node Address Table', 'Network Authentication Token'], correct: 0, explanation: 'NAT translates private IPs to public IPs' },
+      { id: 10, question: 'What is the difference between hub and switch?', options: ['Switch forwards to specific port', 'Hub is smarter', 'No difference', 'Switch broadcasts to all'], correct: 0, explanation: 'Switches learn MAC addresses and forward selectively' },
     ],
-    Chemistry: [
-      { id: 1, question: 'What is the atomic number of Carbon?', options: ['6', '12', '8', '14'], correct: 0, explanation: 'Carbon has 6 protons' },
-      { id: 2, question: 'What is the chemical formula for table salt?', options: ['NaCl', 'KCl', 'CaCl₂', 'MgCl₂'], correct: 0, explanation: 'Table salt is sodium chloride (NaCl)' },
-      { id: 3, question: 'What is the pH of a neutral solution?', options: ['7', '0', '14', '1'], correct: 0, explanation: 'pH 7 is neutral (neither acidic nor basic)' },
-      { id: 4, question: 'Which gas is released during photosynthesis?', options: ['Oxygen', 'Carbon dioxide', 'Nitrogen', 'Hydrogen'], correct: 0, explanation: 'Plants release O₂ during photosynthesis' },
-      { id: 5, question: 'What is the chemical symbol for Gold?', options: ['Au', 'Ag', 'Fe', 'Cu'], correct: 0, explanation: 'Au comes from the Latin "aurum"' },
-      { id: 6, question: 'What type of bond is formed when electrons are shared?', options: ['Covalent bond', 'Ionic bond', 'Metallic bond', 'Hydrogen bond'], correct: 0, explanation: 'Covalent bonds involve electron sharing' },
-      { id: 7, question: 'What is the most abundant gas in Earth\'s atmosphere?', options: ['Nitrogen', 'Oxygen', 'Carbon dioxide', 'Argon'], correct: 0, explanation: 'Nitrogen makes up about 78% of air' },
-      { id: 8, question: 'What is the chemical formula for glucose?', options: ['C₆H₁₂O₆', 'C₁₂H₂₂O₁₁', 'CH₄', 'C₂H₅OH'], correct: 0, explanation: 'Glucose is a simple sugar with formula C₆H₁₂O₆' },
-      { id: 9, question: 'Which element has the symbol Fe?', options: ['Iron', 'Fluorine', 'Francium', 'Fermium'], correct: 0, explanation: 'Fe comes from the Latin "ferrum"' },
-      { id: 10, question: 'What is an exothermic reaction?', options: ['Releases heat', 'Absorbs heat', 'Produces light', 'Produces sound'], correct: 0, explanation: 'Exothermic reactions release energy as heat' },
+    'Design & Analysis of Algorithms': [
+      { id: 1, question: 'What is the time complexity of binary search?', options: ['O(log n)', 'O(n)', 'O(n²)', 'O(1)'], correct: 0, explanation: 'Binary search halves the search space each iteration' },
+      { id: 2, question: 'Which sorting algorithm has the best average case?', options: ['Merge Sort - O(n log n)', 'Bubble Sort - O(n²)', 'Insertion Sort - O(n²)', 'Selection Sort - O(n²)'], correct: 0, explanation: 'Merge sort guarantees O(n log n) in all cases' },
+      { id: 3, question: 'What technique does dynamic programming use?', options: ['Optimal substructure + overlapping subproblems', 'Divide and conquer', 'Random selection', 'Brute force'], correct: 0, explanation: 'DP breaks problems into overlapping subproblems' },
+      { id: 4, question: 'What is the greedy approach?', options: ['Choose locally optimal at each step', 'Try all possibilities', 'Use recursion', 'Random selection'], correct: 0, explanation: 'Greedy algorithms make the best local choice at each step' },
+      { id: 5, question: 'What is Big-O notation?', options: ['Upper bound on growth rate', 'Exact running time', 'Lower bound', 'Average time'], correct: 0, explanation: 'Big-O describes the worst-case upper bound' },
+      { id: 6, question: 'Which problem is solved by Dijkstra\'s algorithm?', options: ['Shortest path', 'Minimum spanning tree', 'Maximum flow', 'Topological sort'], correct: 0, explanation: 'Dijkstra finds shortest path from source to all vertices' },
+      { id: 7, question: 'What is the time complexity of quicksort (average)?', options: ['O(n log n)', 'O(n²)', 'O(n)', 'O(log n)'], correct: 0, explanation: 'Quicksort averages O(n log n) with good pivot selection' },
+      { id: 8, question: 'What is memoization?', options: ['Caching computed results', 'Memorizing code', 'Memory optimization', 'Variable naming'], correct: 0, explanation: 'Memoization stores results of expensive function calls' },
+      { id: 9, question: 'Which is a divide and conquer algorithm?', options: ['Merge Sort', 'Bubble Sort', 'Insertion Sort', 'Selection Sort'], correct: 0, explanation: 'Merge sort divides array, sorts halves, then merges' },
+      { id: 10, question: 'What is the Master Theorem used for?', options: ['Solving recurrence relations', 'Graph theory', 'String matching', 'Sorting'], correct: 0, explanation: 'Master theorem solves recurrences of form T(n)=aT(n/b)+f(n)' },
     ],
-    Biology: [
-      { id: 1, question: 'What is the basic unit of life?', options: ['Cell', 'Tissue', 'Organ', 'Molecule'], correct: 0, explanation: 'The cell is the fundamental unit of all living organisms' },
-      { id: 2, question: 'What is DNA?', options: ['Deoxyribonucleic acid', 'Dinitrogen acid', 'Dioxygen nucleic acid', 'Dual nucleotide acid'], correct: 0, explanation: 'DNA carries genetic information' },
-      { id: 3, question: 'Which organelle is responsible for photosynthesis?', options: ['Chloroplast', 'Mitochondria', 'Nucleus', 'Ribosome'], correct: 0, explanation: 'Chloroplasts contain chlorophyll for photosynthesis' },
-      { id: 4, question: 'How many chromosomes do humans have?', options: ['46', '23', '48', '44'], correct: 0, explanation: 'Humans have 23 pairs = 46 chromosomes' },
-      { id: 5, question: 'What is the function of red blood cells?', options: ['Carry oxygen', 'Fight infection', 'Clot blood', 'Produce hormones'], correct: 0, explanation: 'RBCs carry oxygen using hemoglobin' },
-      { id: 6, question: 'What is the largest organ in the human body?', options: ['Skin', 'Liver', 'Heart', 'Lungs'], correct: 0, explanation: 'Skin covers about 20 square feet' },
-      { id: 7, question: 'What type of organism is yeast?', options: ['Fungus', 'Bacteria', 'Virus', 'Plant'], correct: 0, explanation: 'Yeast is a single-celled fungus' },
-      { id: 8, question: 'What is the process of cell division called?', options: ['Mitosis', 'Meiosis', 'Osmosis', 'Diffusion'], correct: 0, explanation: 'Mitosis produces two identical daughter cells' },
-      { id: 9, question: 'Which vitamin is produced when skin is exposed to sunlight?', options: ['Vitamin D', 'Vitamin C', 'Vitamin A', 'Vitamin B12'], correct: 0, explanation: 'UV rays help synthesize Vitamin D' },
-      { id: 10, question: 'What is the study of heredity called?', options: ['Genetics', 'Ecology', 'Anatomy', 'Physiology'], correct: 0, explanation: 'Genetics studies how traits are inherited' },
+    'Web Technologies': [
+      { id: 1, question: 'What does CSS stand for?', options: ['Cascading Style Sheets', 'Computer Style Sheets', 'Creative Style System', 'Colorful Style Sheets'], correct: 0, explanation: 'CSS styles HTML elements' },
+      { id: 2, question: 'Which HTTP method is used to submit form data?', options: ['POST', 'GET', 'PUT', 'DELETE'], correct: 0, explanation: 'POST sends data to server in request body' },
+      { id: 3, question: 'What is the virtual DOM?', options: ['In-memory representation of real DOM', 'Server-side DOM', 'Database', 'CSS framework'], correct: 0, explanation: 'Virtual DOM optimizes rendering by diffing changes' },
+      { id: 4, question: 'What is REST?', options: ['Representational State Transfer', 'Remote Execution Standard', 'Real-time Event System', 'Resource Exchange Service'], correct: 0, explanation: 'REST is an architectural style for web APIs' },
+      { id: 5, question: 'What does npm stand for?', options: ['Node Package Manager', 'New Program Manager', 'Network Protocol Manager', 'Node Process Monitor'], correct: 0, explanation: 'npm manages JavaScript packages and dependencies' },
+      { id: 6, question: 'What is a closure in JavaScript?', options: ['Function with access to outer scope', 'Closing a browser tab', 'End of function', 'Try-catch block'], correct: 0, explanation: 'Closures retain access to variables from enclosing scope' },
+      { id: 7, question: 'What is CORS?', options: ['Cross-Origin Resource Sharing', 'Central Object Resource System', 'Client Origin Request Standard', 'Cross-Object Rendering Service'], correct: 0, explanation: 'CORS allows restricted resources to be requested cross-origin' },
+      { id: 8, question: 'What is the purpose of a JWT?', options: ['Securely transmit info as JSON token', 'Style web pages', 'Query databases', 'Manage packages'], correct: 0, explanation: 'JWTs are used for authentication and info exchange' },
+      { id: 9, question: 'Which React hook manages state?', options: ['useState', 'useEffect', 'useRef', 'useMemo'], correct: 0, explanation: 'useState lets functional components manage state' },
+      { id: 10, question: 'What is middleware in Express.js?', options: ['Functions that process requests', 'Database connector', 'Frontend framework', 'CSS preprocessor'], correct: 0, explanation: 'Middleware functions have access to req, res, and next' },
     ],
-    'Computer Science': [
-      { id: 1, question: 'What does CPU stand for?', options: ['Central Processing Unit', 'Computer Personal Unit', 'Central Program Unit', 'Computer Processing Unit'], correct: 0, explanation: 'CPU is the brain of the computer' },
-      { id: 2, question: 'Which language is known as the mother of all languages?', options: ['C', 'Java', 'Python', 'FORTRAN'], correct: 0, explanation: 'C influenced many modern programming languages' },
-      { id: 3, question: 'What is 1024 bytes called?', options: ['Kilobyte', 'Megabyte', 'Gigabyte', 'Bit'], correct: 0, explanation: '1 KB = 1024 bytes' },
-      { id: 4, question: 'What does HTML stand for?', options: ['HyperText Markup Language', 'High Tech Modern Language', 'Hyper Transfer Markup Language', 'Home Tool Markup Language'], correct: 0, explanation: 'HTML is used to structure web pages' },
-      { id: 5, question: 'Which of these is an operating system?', options: ['Linux', 'Python', 'Chrome', 'Photoshop'], correct: 0, explanation: 'Linux is a free, open-source OS' },
-      { id: 6, question: 'What is the binary representation of 5?', options: ['101', '110', '100', '111'], correct: 0, explanation: '5 in binary is 101 (4+0+1)' },
-      { id: 7, question: 'What does RAM stand for?', options: ['Random Access Memory', 'Read Access Memory', 'Run Access Memory', 'Real Access Memory'], correct: 0, explanation: 'RAM is temporary, volatile memory' },
-      { id: 8, question: 'Which data structure uses FIFO?', options: ['Queue', 'Stack', 'Array', 'Tree'], correct: 0, explanation: 'Queue uses First In, First Out' },
-      { id: 9, question: 'What is an algorithm?', options: ['Step-by-step instructions', 'A programming language', 'A type of hardware', 'An operating system'], correct: 0, explanation: 'An algorithm is a set of instructions to solve a problem' },
-      { id: 10, question: 'What does URL stand for?', options: ['Uniform Resource Locator', 'Universal Resource Link', 'Uniform Resource Link', 'Universal Resource Locator'], correct: 0, explanation: 'URL is the address of a web page' },
+    'Artificial Intelligence': [
+      { id: 1, question: 'What is the Turing Test?', options: ['Test if machine exhibits intelligent behavior', 'CPU benchmark', 'Memory test', 'Network speed test'], correct: 0, explanation: 'Turing test evaluates if a machine can mimic human intelligence' },
+      { id: 2, question: 'Which search algorithm uses a heuristic?', options: ['A*', 'BFS', 'DFS', 'Dijkstra'], correct: 0, explanation: 'A* uses heuristic function to estimate cost to goal' },
+      { id: 3, question: 'What is a neural network inspired by?', options: ['Human brain', 'Computer CPU', 'Internet', 'Databases'], correct: 0, explanation: 'Neural networks mimic biological neuron connections' },
+      { id: 4, question: 'What is NLP?', options: ['Natural Language Processing', 'Network Layer Protocol', 'Numerical Logic Program', 'Node Link Processing'], correct: 0, explanation: 'NLP enables computers to understand human language' },
+      { id: 5, question: 'What is an intelligent agent?', options: ['Entity that perceives and acts on environment', 'Programming language', 'Database system', 'Operating system'], correct: 0, explanation: 'Agents perceive through sensors and act through actuators' },
+      { id: 6, question: 'What is supervised learning?', options: ['Learning from labeled data', 'Learning without data', 'Self-directed learning', 'Unsupervised clustering'], correct: 0, explanation: 'Supervised learning trains on input-output pairs' },
+      { id: 7, question: 'What is the purpose of activation functions in neural networks?', options: ['Introduce non-linearity', 'Store data', 'Connect layers', 'Initialize weights'], correct: 0, explanation: 'Activation functions allow networks to learn complex patterns' },
+      { id: 8, question: 'What is reinforcement learning?', options: ['Learning through rewards and penalties', 'Learning from labeled data', 'Clustering data', 'Feature extraction'], correct: 0, explanation: 'RL agents learn by receiving rewards for actions' },
+      { id: 9, question: 'What is a decision tree?', options: ['Tree-like model of decisions', 'Binary tree', 'File system', 'Network topology'], correct: 0, explanation: 'Decision trees split data based on features for classification' },
+      { id: 10, question: 'What is computer vision?', options: ['AI that interprets visual data', 'Monitor resolution', 'Graphics rendering', 'Video streaming'], correct: 0, explanation: 'Computer vision enables machines to interpret images/video' },
     ],
-    Arts: [
-      { id: 1, question: 'Who painted the Mona Lisa?', options: ['Leonardo da Vinci', 'Michelangelo', 'Raphael', 'Botticelli'], correct: 0, explanation: 'Da Vinci painted it between 1503-1519' },
-      { id: 2, question: 'What are the three primary colors?', options: ['Red, Blue, Yellow', 'Red, Green, Blue', 'Red, Orange, Yellow', 'Blue, Green, Yellow'], correct: 0, explanation: 'Primary colors cannot be made by mixing other colors' },
-      { id: 3, question: 'What is the art of paper folding called?', options: ['Origami', 'Calligraphy', 'Sculpture', 'Mosaic'], correct: 0, explanation: 'Origami is the Japanese art of paper folding' },
-      { id: 4, question: 'Who sculpted the statue of David?', options: ['Michelangelo', 'Donatello', 'Bernini', 'Rodin'], correct: 0, explanation: 'Michelangelo created it between 1501-1504' },
-      { id: 5, question: 'What is the term for painting on wet plaster?', options: ['Fresco', 'Oil painting', 'Watercolor', 'Acrylic'], correct: 0, explanation: 'Fresco painting uses water-based pigments on fresh plaster' },
-      { id: 6, question: 'Which art movement is Salvador Dalí associated with?', options: ['Surrealism', 'Impressionism', 'Cubism', 'Pop Art'], correct: 0, explanation: 'Dalí was a leading surrealist artist' },
-      { id: 7, question: 'What does "Renaissance" mean?', options: ['Rebirth', 'Revolution', 'Revival', 'Reform'], correct: 0, explanation: 'Renaissance means "rebirth" in French' },
-      { id: 8, question: 'Who painted "The Starry Night"?', options: ['Vincent van Gogh', 'Claude Monet', 'Pablo Picasso', 'Rembrandt'], correct: 0, explanation: 'Van Gogh painted it in 1889' },
-      { id: 9, question: 'What is a self-portrait?', options: ['A portrait of the artist by themselves', 'A landscape painting', 'A still life', 'An abstract work'], correct: 0, explanation: 'Artists create self-portraits of themselves' },
-      { id: 10, question: 'Which color is created by mixing blue and yellow?', options: ['Green', 'Orange', 'Purple', 'Brown'], correct: 0, explanation: 'Blue + Yellow = Green' },
+    'Machine Learning': [
+      { id: 1, question: 'What is overfitting?', options: ['Model performs well on training but poorly on new data', 'Model is too simple', 'Model crashes', 'Model is slow'], correct: 0, explanation: 'Overfitting means the model memorizes training data instead of learning patterns' },
+      { id: 2, question: 'What is the purpose of a validation set?', options: ['Tune model hyperparameters', 'Train the model', 'Deploy the model', 'Store data'], correct: 0, explanation: 'Validation set helps tune parameters without touching test data' },
+      { id: 3, question: 'What is gradient descent?', options: ['Optimization algorithm to minimize loss', 'Data preprocessing step', 'Feature selection method', 'Visualization tool'], correct: 0, explanation: 'Gradient descent iteratively adjusts parameters to minimize the loss function' },
+      { id: 4, question: 'What is a confusion matrix?', options: ['Table showing prediction results', 'Random matrix', 'Weight matrix', 'Input matrix'], correct: 0, explanation: 'Confusion matrix shows true/false positives and negatives' },
+      { id: 5, question: 'What is k-means clustering?', options: ['Partitioning data into k groups', 'Sorting algorithm', 'Search algorithm', 'Neural network type'], correct: 0, explanation: 'K-means groups data points into k clusters by proximity' },
+      { id: 6, question: 'What is the bias-variance tradeoff?', options: ['Balancing underfitting and overfitting', 'Speed vs accuracy', 'Memory vs CPU', 'Training vs testing'], correct: 0, explanation: 'High bias = underfitting, high variance = overfitting' },
+      { id: 7, question: 'What is a CNN used for?', options: ['Image recognition', 'Text processing', 'Audio only', 'Database queries'], correct: 0, explanation: 'Convolutional Neural Networks excel at image processing' },
+      { id: 8, question: 'What is cross-validation?', options: ['Splitting data into folds for robust evaluation', 'Crossing out bad data', 'Validating credentials', 'Network validation'], correct: 0, explanation: 'Cross-validation tests model performance across different data splits' },
+      { id: 9, question: 'What is feature engineering?', options: ['Creating new input features from raw data', 'Building software features', 'Bug fixing', 'UI design'], correct: 0, explanation: 'Feature engineering transforms raw data into useful model inputs' },
+      { id: 10, question: 'What is an RNN used for?', options: ['Sequential data like text and time series', 'Image classification', 'Static data', 'Database operations'], correct: 0, explanation: 'Recurrent Neural Networks process sequential data with memory' },
     ],
   };
 
-  // Get questions for the subject or use default
-  let questions = fallbackQuestions[subject] || fallbackQuestions.Mathematics;
+  // Get questions for the subject or use default (try name match, then first available)
+  let questions = fallbackQuestions[subject] || fallbackQuestions['Data Structures'];
 
-  // Shuffle and limit to requested count
+  // Shuffle question order, limit to requested count, then randomize option positions
   questions = questions.sort(() => Math.random() - 0.5).slice(0, count);
+  questions = shuffleQuestionOptions(questions);
 
   return {
     success: true,
@@ -276,25 +306,37 @@ const generateFallbackTest = (subject, count, difficulty) => {
 
 // Question bank structure (in production, this would come from Firebase)
 const sampleQuestions = {
-  math: {
-    algebra: [
-      { id: 1, question: 'Solve for x: 2x + 5 = 15', options: ['x = 5', 'x = 10', 'x = 7.5', 'x = 4'], correct: 0, difficulty: 2 },
-      { id: 2, question: 'Factor: x² - 9', options: ['(x-3)(x+3)', '(x-9)(x+1)', '(x-3)²', 'Cannot factor'], correct: 0, difficulty: 3 },
-      { id: 3, question: 'Solve: 3x² - 12 = 0', options: ['x = ±2', 'x = ±4', 'x = ±3', 'x = ±6'], correct: 0, difficulty: 4 },
+  data_structures: {
+    arrays: [
+      { id: 1, question: 'What is the time complexity of accessing an array element by index?', options: ['O(1)', 'O(n)', 'O(log n)', 'O(n²)'], correct: 0, difficulty: 1 },
+      { id: 2, question: 'What is the worst-case time complexity of searching an unsorted array?', options: ['O(n)', 'O(1)', 'O(log n)', 'O(n²)'], correct: 0, difficulty: 2 },
+      { id: 3, question: 'What is the time complexity of inserting at the beginning of an array?', options: ['O(n)', 'O(1)', 'O(log n)', 'O(n²)'], correct: 0, difficulty: 3 },
     ],
-    geometry: [
-      { id: 4, question: 'Area of circle with radius 5?', options: ['25π', '10π', '5π', '50π'], correct: 0, difficulty: 2 },
-      { id: 5, question: 'Sum of angles in a triangle?', options: ['180°', '360°', '90°', '270°'], correct: 0, difficulty: 1 },
+    trees: [
+      { id: 4, question: 'What is the height of a balanced BST with n nodes?', options: ['O(log n)', 'O(n)', 'O(1)', 'O(n²)'], correct: 0, difficulty: 3 },
+      { id: 5, question: 'Which traversal gives sorted output in a BST?', options: ['Inorder', 'Preorder', 'Postorder', 'Level-order'], correct: 0, difficulty: 2 },
     ],
   },
-  science: {
-    physics: [
-      { id: 6, question: 'Unit of force?', options: ['Newton', 'Joule', 'Watt', 'Pascal'], correct: 0, difficulty: 1 },
-      { id: 7, question: 'F = ma is known as?', options: ["Newton's 2nd Law", "Newton's 1st Law", 'Law of Gravity', 'Law of Motion'], correct: 0, difficulty: 2 },
+  algorithms: {
+    sorting: [
+      { id: 6, question: 'What is merge sort\'s time complexity?', options: ['O(n log n)', 'O(n²)', 'O(n)', 'O(log n)'], correct: 0, difficulty: 2 },
+      { id: 7, question: 'Which sorting algorithm is in-place?', options: ['Quick Sort', 'Merge Sort', 'Counting Sort', 'Radix Sort'], correct: 0, difficulty: 3 },
     ],
-    chemistry: [
-      { id: 8, question: 'Atomic number of Carbon?', options: ['6', '12', '8', '14'], correct: 0, difficulty: 1 },
-      { id: 9, question: 'Chemical formula for water?', options: ['H₂O', 'CO₂', 'O₂', 'H₂O₂'], correct: 0, difficulty: 1 },
+    dp: [
+      { id: 8, question: 'What is the key property of dynamic programming?', options: ['Overlapping subproblems', 'Random access', 'Sorted data', 'Constant space'], correct: 0, difficulty: 2 },
+      { id: 9, question: 'What technique stores previously computed results?', options: ['Memoization', 'Recursion', 'Iteration', 'Backtracking'], correct: 0, difficulty: 2 },
+    ],
+  },
+  dbms: {
+    sql: [
+      { id: 10, question: 'Which SQL clause filters grouped results?', options: ['HAVING', 'WHERE', 'GROUP BY', 'ORDER BY'], correct: 0, difficulty: 2 },
+      { id: 11, question: 'Which normal form removes transitive dependencies?', options: ['3NF', '1NF', '2NF', 'BCNF'], correct: 0, difficulty: 3 },
+    ],
+  },
+  networks: {
+    protocols: [
+      { id: 12, question: 'Which protocol provides reliable delivery?', options: ['TCP', 'UDP', 'IP', 'ICMP'], correct: 0, difficulty: 1 },
+      { id: 13, question: 'How many layers does the OSI model have?', options: ['7', '5', '4', '6'], correct: 0, difficulty: 1 },
     ],
   },
 };
@@ -492,7 +534,7 @@ const getQuestionsForTest = async (subject, targetDifficulty, count, topics, wea
 
   // Shuffle and select
   const shuffled = filteredQuestions.sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, Math.min(count, shuffled.length));
+  return shuffleQuestionOptions(shuffled.slice(0, Math.min(count, shuffled.length)));
 };
 
 // Helper: Calculate score trend
