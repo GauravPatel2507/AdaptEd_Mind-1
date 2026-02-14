@@ -59,8 +59,8 @@ export default function TestsScreen() {
         score: r.score,
         total: r.totalQuestions,
         date: formatDate(r.createdAt),
-        icon: getSubjectIcon(r.subject?.toLowerCase()),
-        color: getSubjectColor(r.subject)
+        icon: getSubjectIcon(r.subjectId || r.subject?.toLowerCase()),
+        color: getSubjectColor(r.subjectId, r.subject)
       }));
 
       setTestHistory(history);
@@ -84,24 +84,14 @@ export default function TestsScreen() {
 
   // Get subject icon
   const getSubjectIcon = (subjectId) => {
-    const icons = {
-      mathematics: 'calculator', math: 'calculator',
-      science: 'flask',
-      english: 'book',
-      history: 'time',
-      geography: 'globe',
-      physics: 'nuclear',
-      chemistry: 'beaker',
-      biology: 'leaf',
-      'computer science': 'laptop', computer: 'laptop',
-      arts: 'color-palette'
-    };
-    return icons[subjectId] || 'school';
+    const sub = SUBJECTS.find(s => s.id === subjectId || s.name.toLowerCase() === subjectId);
+    return sub?.icon || 'school';
   };
 
   // Get subject color
-  const getSubjectColor = (subject) => {
-    const found = SUBJECTS.find(s => s.name.toLowerCase() === subject?.toLowerCase());
+  const getSubjectColor = (subjectId, subjectName) => {
+    const found = SUBJECTS.find(s => s.id === subjectId)
+      || SUBJECTS.find(s => s.name.toLowerCase() === (subjectName || subjectId)?.toLowerCase());
     return found?.color || '#6366F1';
   };
 
@@ -123,11 +113,37 @@ export default function TestsScreen() {
     setIsGenerating(true);
 
     try {
+      // Fetch user's average score for this subject (for adaptive difficulty)
+      let userAvgScore = null;
+      if (user && testConfig.difficulty === 'adaptive') {
+        try {
+          const quizResultsRef = collection(db, 'quizResults');
+          const q = query(quizResultsRef, where('userId', '==', user.uid));
+          const snapshot = await getDocs(q);
+          const subjectResults = [];
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.subject === selectedSubject.name || data.subjectId === selectedSubject.id) {
+              subjectResults.push(data);
+            }
+          });
+          if (subjectResults.length > 0) {
+            userAvgScore = Math.round(
+              subjectResults.reduce((sum, r) => sum + (r.score || 0), 0) / subjectResults.length
+            );
+          }
+          console.log(`Adaptive difficulty: ${selectedSubject.name} avg score = ${userAvgScore ?? 'no history'}`);
+        } catch (e) {
+          console.log('Could not fetch progress for adaptive difficulty:', e.message);
+        }
+      }
+
       // Generate AI test
       const result = await generateAITest(selectedSubject.name, {
         numberOfQuestions: testConfig.questions,
         difficulty: testConfig.difficulty,
-        timeLimit: testConfig.timeLimit
+        timeLimit: testConfig.timeLimit,
+        userAvgScore
       });
 
       setShowTestModal(false);
@@ -139,10 +155,11 @@ export default function TestsScreen() {
           pathname: '/take-test',
           params: {
             subject: selectedSubject.name,
+            subjectId: selectedSubject.id,
             subjectColor: selectedSubject.color,
             questions: JSON.stringify(result.data.questions),
             timeLimit: testConfig.timeLimit,
-            difficulty: testConfig.difficulty
+            difficulty: result.data.difficulty
           }
         });
       } else {
@@ -277,8 +294,8 @@ export default function TestsScreen() {
             <Text style={styles.insightTitle}>AI Insight</Text>
           </View>
           <Text style={styles.insightText}>
-            Based on your recent tests, we recommend focusing on <Text style={styles.insightHighlight}>Quadratic Equations</Text>
-            {' '}and <Text style={styles.insightHighlight}>Chemical Balancing</Text>. Your performance in these areas can improve by 15% with targeted practice.
+            Based on your recent tests, we recommend focusing on <Text style={styles.insightHighlight}>Dynamic Programming</Text>
+            {' '}and <Text style={styles.insightHighlight}>SQL Normalization</Text>. Your performance in these areas can improve by 15% with targeted practice.
           </Text>
           <TouchableOpacity style={styles.insightButton}>
             <Text style={styles.insightButtonText}>Start Focused Practice</Text>
@@ -412,19 +429,8 @@ export default function TestsScreen() {
 }
 
 const getSubjectIcon = (subjectId) => {
-  const icons = {
-    math: 'calculator',
-    science: 'flask',
-    english: 'book',
-    history: 'time',
-    geography: 'globe',
-    physics: 'nuclear',
-    chemistry: 'beaker',
-    biology: 'leaf',
-    computer: 'laptop',
-    arts: 'color-palette',
-  };
-  return icons[subjectId] || 'school';
+  const sub = SUBJECTS.find(s => s.id === subjectId);
+  return sub?.icon || 'school';
 };
 
 const getScoreColor = (score) => {

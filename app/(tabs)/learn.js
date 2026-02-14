@@ -18,183 +18,319 @@ const { width } = Dimensions.get('window');
 
 // Subject-specific topics and YouTube videos
 const SUBJECT_CONTENT = {
-  math: {
+  c_programming: {
     topics: [
-      { id: 1, title: 'Algebra Basics', description: 'Variables, equations, and expressions', duration: '15 min' },
-      { id: 2, title: 'Quadratic Equations', description: 'Solving and graphing quadratics', duration: '20 min' },
-      { id: 3, title: 'Geometry Fundamentals', description: 'Shapes, angles, and proofs', duration: '25 min' },
-      { id: 4, title: 'Trigonometry', description: 'Sin, cos, tan and applications', duration: '30 min' },
-      { id: 5, title: 'Calculus Introduction', description: 'Limits, derivatives, and integrals', duration: '35 min' },
+      { id: 1, title: 'Introduction to C', description: 'History, structure, compilation process', duration: '20 min' },
+      { id: 2, title: 'Data Types & Operators', description: 'Variables, constants, type casting', duration: '25 min' },
+      { id: 3, title: 'Control Structures', description: 'If-else, switch, loops', duration: '25 min' },
+      { id: 4, title: 'Functions & Recursion', description: 'Function types, call by value/reference', duration: '30 min' },
+      { id: 5, title: 'Pointers & Memory', description: 'Pointer arithmetic, dynamic allocation', duration: '35 min' },
     ],
     videos: [
-      { id: 1, title: 'Algebra Full Course', thumbnail: '🔢', videoId: 'NybHckSEQBI', channel: 'freeCodeCamp' },
-      { id: 2, title: 'Quadratic Equations Explained', thumbnail: '📐', videoId: 'i7idZfS8t8w', channel: 'Khan Academy' },
-      { id: 3, title: 'Learn Geometry', thumbnail: '📏', videoId: '302eJ3TzJQU', channel: 'Math Antics' },
-      { id: 4, title: 'Trigonometry Basics', thumbnail: '📊', videoId: 'PUB0TaZ7bhA', channel: 'Khan Academy' },
-      { id: 5, title: 'Calculus 1 - Full Course', thumbnail: '∫', videoId: 'HfACrKJ_Y2w', channel: 'freeCodeCamp' },
-      { id: 6, title: 'Linear Algebra', thumbnail: '🔷', videoId: 'fNk_zzaMoSs', channel: '3Blue1Brown' },
+      { id: 1, title: 'C Programming Full Course', thumbnail: '💻', videoId: 'KJgsSFOSQv0', channel: 'freeCodeCamp' },
+      { id: 2, title: 'Pointers in C Explained', thumbnail: '👉', videoId: 'zuegQmMdy8M', channel: 'freeCodeCamp' },
+      { id: 3, title: 'C in 100 Seconds', thumbnail: '⚡', videoId: 'U3aXWizDbQ4', channel: 'Fireship' },
+      { id: 4, title: 'C Programming for Beginners', thumbnail: '📘', videoId: 'ss0B62SKaOk', channel: 'Programiz' },
+      { id: 5, title: 'Dynamic Memory in C', thumbnail: '🧠', videoId: 'xDVC3wKjS64', channel: 'mycodeschool' },
+      { id: 6, title: 'File Handling in C', thumbnail: '📂', videoId: 'WljVkCfG1jI', channel: 'Neso Academy' },
     ]
   },
-  science: {
+  data_structures: {
     topics: [
-      { id: 1, title: 'Scientific Method', description: 'Observation, hypothesis, experiment', duration: '10 min' },
-      { id: 2, title: 'Matter and Energy', description: 'States of matter and energy forms', duration: '20 min' },
-      { id: 3, title: 'Forces and Motion', description: 'Newton\'s laws and mechanics', duration: '25 min' },
-      { id: 4, title: 'Ecosystems', description: 'Living organisms and their environment', duration: '20 min' },
-      { id: 5, title: 'Human Body Systems', description: 'Organs and their functions', duration: '30 min' },
+      { id: 1, title: 'Arrays & Linked Lists', description: 'Linear data structures basics', duration: '25 min' },
+      { id: 2, title: 'Stacks & Queues', description: 'LIFO, FIFO, implementations', duration: '25 min' },
+      { id: 3, title: 'Trees & BST', description: 'Binary trees, traversals, BST operations', duration: '30 min' },
+      { id: 4, title: 'Graphs', description: 'BFS, DFS, adjacency representations', duration: '35 min' },
+      { id: 5, title: 'Hashing & Heaps', description: 'Hash tables, priority queues', duration: '30 min' },
     ],
     videos: [
-      { id: 1, title: 'Science 101', thumbnail: '🔬', videoId: 'bXsKj_Vs0Ss', channel: 'Nat Geo' },
-      { id: 2, title: 'Newton\'s Laws of Motion', thumbnail: '🚀', videoId: 'kKKM8Y-u7ds', channel: 'Crash Course' },
-      { id: 3, title: 'The Scientific Method', thumbnail: '🧪', videoId: 'N6IAzlugWw0', channel: 'SciShow' },
-      { id: 4, title: 'States of Matter', thumbnail: '💧', videoId: 'YRLJUvPKN0A', channel: 'Crash Course' },
-      { id: 5, title: 'Energy and Power', thumbnail: '⚡', videoId: 'w4QFJb9a8vo', channel: 'Khan Academy' },
-      { id: 6, title: 'Ecosystems Explained', thumbnail: '🌿', videoId: 'sHIo0FKDz-k', channel: 'National Geographic' },
+      { id: 1, title: 'Data Structures Full Course', thumbnail: '🌳', videoId: 'RBSGKlAvoiM', channel: 'freeCodeCamp' },
+      { id: 2, title: 'Linked List in 6 Minutes', thumbnail: '🔗', videoId: 'HB7TcYklBHY', channel: 'CS Dojo' },
+      { id: 3, title: 'Binary Trees Explained', thumbnail: '🌲', videoId: 'fAAZixBzIAI', channel: 'mycodeschool' },
+      { id: 4, title: 'Graph Algorithms', thumbnail: '📊', videoId: 'tWVWeAqZ0WU', channel: 'freeCodeCamp' },
+      { id: 5, title: 'Hash Tables Explained', thumbnail: '#️⃣', videoId: 'shs0KM3wKv8', channel: 'CS Dojo' },
+      { id: 6, title: 'Stack vs Queue', thumbnail: '📚', videoId: 'wjI1WNcIntg', channel: 'mycodeschool' },
     ]
   },
-  english: {
+  oop: {
     topics: [
-      { id: 1, title: 'Grammar Essentials', description: 'Parts of speech and sentence structure', duration: '15 min' },
-      { id: 2, title: 'Essay Writing', description: 'Structure, thesis, and arguments', duration: '25 min' },
-      { id: 3, title: 'Reading Comprehension', description: 'Analysis and interpretation', duration: '20 min' },
-      { id: 4, title: 'Vocabulary Building', description: 'Word roots and context clues', duration: '15 min' },
-      { id: 5, title: 'Creative Writing', description: 'Storytelling and narrative techniques', duration: '30 min' },
+      { id: 1, title: 'Classes & Objects', description: 'Encapsulation, constructors, this keyword', duration: '25 min' },
+      { id: 2, title: 'Inheritance & Polymorphism', description: 'Method overriding, abstract classes', duration: '30 min' },
+      { id: 3, title: 'Interfaces & Abstraction', description: 'Interfaces, abstract methods, design', duration: '25 min' },
+      { id: 4, title: 'Design Patterns', description: 'Singleton, Factory, Observer patterns', duration: '35 min' },
+      { id: 5, title: 'Exception Handling', description: 'Try-catch, custom exceptions, best practices', duration: '20 min' },
     ],
     videos: [
-      { id: 1, title: 'English Grammar Course', thumbnail: '📚', videoId: '7Bmj-dPVBzs', channel: 'English Addict' },
-      { id: 2, title: 'Essay Writing Tips', thumbnail: '✍️', videoId: 'dZVzuFLUaF8', channel: 'TED-Ed' },
-      { id: 3, title: 'Improve Vocabulary', thumbnail: '📖', videoId: 'WnlBZ_5bS0Y', channel: 'English Lessons' },
-      { id: 4, title: 'Reading Comprehension', thumbnail: '📕', videoId: 'OLjXy0BPBnE', channel: 'Khan Academy' },
-      { id: 5, title: 'Creative Writing Basics', thumbnail: '🖊️', videoId: 'frz6g1M3pEE', channel: 'Skillshare' },
-      { id: 6, title: 'Public Speaking Skills', thumbnail: '🎤', videoId: 'H6qgkCvJWiU', channel: 'TED-Ed' },
+      { id: 1, title: 'OOP in Java Full Course', thumbnail: '☕', videoId: 'xk4_1vDrzzo', channel: 'Bro Code' },
+      { id: 2, title: 'OOP in Python', thumbnail: '🐍', videoId: 'Ej_02ICOIgs', channel: 'freeCodeCamp' },
+      { id: 3, title: 'C++ OOP Crash Course', thumbnail: '⚙️', videoId: 'wN0x9eZLix4', channel: 'freeCodeCamp' },
+      { id: 4, title: 'SOLID Principles', thumbnail: '🧱', videoId: '_jDNAf3CzeY', channel: 'Fireship' },
+      { id: 5, title: 'Design Patterns Explained', thumbnail: '🏗️', videoId: 'tv-_1er1mWI', channel: 'Fireship' },
+      { id: 6, title: 'Polymorphism Explained', thumbnail: '🔄', videoId: 'jhDUxynEQRI', channel: 'Programming with Mosh' },
     ]
   },
-  physics: {
+  dbms: {
     topics: [
-      { id: 1, title: 'Mechanics', description: 'Motion, forces, and energy', duration: '30 min' },
-      { id: 2, title: 'Waves and Sound', description: 'Wave properties and acoustics', duration: '25 min' },
-      { id: 3, title: 'Electricity', description: 'Circuits, current, and voltage', duration: '30 min' },
-      { id: 4, title: 'Magnetism', description: 'Magnetic fields and electromagnetism', duration: '25 min' },
-      { id: 5, title: 'Optics', description: 'Light, reflection, and refraction', duration: '20 min' },
+      { id: 1, title: 'ER Model & Relations', description: 'Entity-relationship diagrams, keys', duration: '25 min' },
+      { id: 2, title: 'SQL Fundamentals', description: 'SELECT, JOIN, subqueries, aggregation', duration: '30 min' },
+      { id: 3, title: 'Normalization', description: '1NF, 2NF, 3NF, BCNF', duration: '25 min' },
+      { id: 4, title: 'Transactions & ACID', description: 'Concurrency control, serializability', duration: '30 min' },
+      { id: 5, title: 'Indexing & NoSQL', description: 'B-trees, hashing, MongoDB basics', duration: '25 min' },
     ],
     videos: [
-      { id: 1, title: 'Physics Full Course', thumbnail: '⚛️', videoId: 'ZM8ECpBuQYE', channel: 'freeCodeCamp' },
-      { id: 2, title: 'Electricity Explained', thumbnail: '⚡', videoId: 'mc979OhitAg', channel: 'Crash Course' },
-      { id: 3, title: 'Waves and Light', thumbnail: '🌊', videoId: 'Io-HXZTepH4', channel: 'Khan Academy' },
-      { id: 4, title: 'Quantum Mechanics Intro', thumbnail: '🔬', videoId: 'Usu9xZfabPM', channel: 'PBS Space Time' },
-      { id: 5, title: 'Thermodynamics Basics', thumbnail: '🌡️', videoId: 'NyOYW07-L5g', channel: 'Khan Academy' },
-      { id: 6, title: 'Magnetism Explained', thumbnail: '🧲', videoId: 'hFAOXdXZ5TM', channel: 'Veritasium' },
+      { id: 1, title: 'SQL Full Course', thumbnail: '🗄️', videoId: 'HXV3zeQKqGY', channel: 'freeCodeCamp' },
+      { id: 2, title: 'Database Design Course', thumbnail: '📐', videoId: 'ztHopE5Wnpc', channel: 'freeCodeCamp' },
+      { id: 3, title: 'Normalization Explained', thumbnail: '📊', videoId: 'UrYLYV7WSHM', channel: 'Decomplexify' },
+      { id: 4, title: 'MongoDB Crash Course', thumbnail: '🍃', videoId: 'ofme2o29ngU', channel: 'Web Dev Simplified' },
+      { id: 5, title: 'SQL Joins Explained', thumbnail: '🔗', videoId: '9yeOJ0ZMUYw', channel: 'Joey Blue' },
+      { id: 6, title: 'ACID Properties', thumbnail: '⚗️', videoId: 'yaQ5YMWkxq4', channel: 'Hussein Nasser' },
     ]
   },
-  chemistry: {
+  os: {
     topics: [
-      { id: 1, title: 'Atomic Structure', description: 'Protons, neutrons, and electrons', duration: '20 min' },
-      { id: 2, title: 'Periodic Table', description: 'Elements and their properties', duration: '25 min' },
-      { id: 3, title: 'Chemical Bonding', description: 'Ionic, covalent, and metallic bonds', duration: '30 min' },
-      { id: 4, title: 'Chemical Reactions', description: 'Reaction types and balancing', duration: '25 min' },
-      { id: 5, title: 'Organic Chemistry', description: 'Carbon compounds and hydrocarbons', duration: '35 min' },
+      { id: 1, title: 'Process Management', description: 'Processes, threads, scheduling algorithms', duration: '30 min' },
+      { id: 2, title: 'Memory Management', description: 'Paging, segmentation, virtual memory', duration: '30 min' },
+      { id: 3, title: 'File Systems', description: 'File allocation, directory structures', duration: '25 min' },
+      { id: 4, title: 'Deadlocks', description: 'Detection, prevention, avoidance strategies', duration: '25 min' },
+      { id: 5, title: 'Synchronization', description: 'Semaphores, monitors, critical sections', duration: '30 min' },
     ],
     videos: [
-      { id: 1, title: 'Chemistry Basics', thumbnail: '🧪', videoId: 'bka20Q9TN6M', channel: 'Crash Course' },
-      { id: 2, title: 'Periodic Table Explained', thumbnail: '⚗️', videoId: 'rz4Dd1I_fX0', channel: 'TED-Ed' },
-      { id: 3, title: 'Chemical Bonding', thumbnail: '🔗', videoId: 'CGA8sRwqIFg', channel: 'Professor Dave' },
-      { id: 4, title: 'Organic Chemistry Intro', thumbnail: '🔬', videoId: 'GOBFw0vVDlI', channel: 'Khan Academy' },
-      { id: 5, title: 'Chemical Reactions', thumbnail: '💥', videoId: 'kzlUyrccbos', channel: 'Crash Course' },
-      { id: 6, title: 'Acids and Bases', thumbnail: '🧫', videoId: 'vt8fB3MFzLk', channel: 'Bozeman Science' },
+      { id: 1, title: 'Operating Systems Full Course', thumbnail: '🖥️', videoId: 'yK1uBHPdp30', channel: 'Neso Academy' },
+      { id: 2, title: 'Process vs Thread', thumbnail: '🔀', videoId: 'exbKr6fnoUw', channel: 'IBM Technology' },
+      { id: 3, title: 'Virtual Memory Explained', thumbnail: '🧠', videoId: 'A9WLYbE0p-I', channel: 'Computerphile' },
+      { id: 4, title: 'Deadlock Explained', thumbnail: '🔒', videoId: 'UVo9mGARkhQ', channel: 'Neso Academy' },
+      { id: 5, title: 'CPU Scheduling', thumbnail: '⏱️', videoId: '2h3eWaPx8SA', channel: 'Neso Academy' },
+      { id: 6, title: 'Linux OS Internals', thumbnail: '🐧', videoId: 'wBp0Rb-ZJak', channel: 'The Linux Channel' },
     ]
   },
-  biology: {
+  networks: {
     topics: [
-      { id: 1, title: 'Cell Biology', description: 'Cell structure and functions', duration: '25 min' },
-      { id: 2, title: 'Genetics', description: 'DNA, genes, and inheritance', duration: '30 min' },
-      { id: 3, title: 'Evolution', description: 'Natural selection and adaptation', duration: '25 min' },
-      { id: 4, title: 'Human Anatomy', description: 'Body systems and organs', duration: '35 min' },
-      { id: 5, title: 'Ecology', description: 'Ecosystems and biodiversity', duration: '20 min' },
+      { id: 1, title: 'OSI & TCP/IP Model', description: 'Network layers and protocols', duration: '25 min' },
+      { id: 2, title: 'IP Addressing & Subnetting', description: 'IPv4, IPv6, CIDR notation', duration: '30 min' },
+      { id: 3, title: 'Routing & Switching', description: 'Routing algorithms, VLANs', duration: '30 min' },
+      { id: 4, title: 'Transport Layer', description: 'TCP, UDP, flow control', duration: '25 min' },
+      { id: 5, title: 'Application Layer Protocols', description: 'HTTP, DNS, SMTP, FTP', duration: '25 min' },
     ],
     videos: [
-      { id: 1, title: 'Biology Full Course', thumbnail: '🧬', videoId: 'QnQe0xW_JY4', channel: 'Crash Course' },
-      { id: 2, title: 'DNA Explained', thumbnail: '🔬', videoId: '8kK2zwjRV0M', channel: 'Kurzgesagt' },
-      { id: 3, title: 'Cell Biology', thumbnail: '🦠', videoId: 'URUJD5NEXC8', channel: 'Amoeba Sisters' },
-      { id: 4, title: 'Evolution Explained', thumbnail: '🐒', videoId: 'hOfRN0KihOU', channel: 'Stated Clearly' },
-      { id: 5, title: 'Photosynthesis', thumbnail: '🌱', videoId: 'g78utcLQrJ4', channel: 'Bozeman Science' },
-      { id: 6, title: 'Human Body Systems', thumbnail: '❤️', videoId: 'lYXj-5lWFg', channel: 'Crash Course' },
+      { id: 1, title: 'Computer Networking Full Course', thumbnail: '🌐', videoId: 'qiQR5rTSshw', channel: 'freeCodeCamp' },
+      { id: 2, title: 'Subnetting Made Easy', thumbnail: '🔢', videoId: 'ecCuyq-Wprc', channel: 'Practical Networking' },
+      { id: 3, title: 'OSI Model Explained', thumbnail: '📶', videoId: 'vv4y_uOneC0', channel: 'TechTerms' },
+      { id: 4, title: 'TCP vs UDP', thumbnail: '📡', videoId: 'uwoD5YsGACg', channel: 'Fireship' },
+      { id: 5, title: 'DNS Explained', thumbnail: '🔍', videoId: '72snZctFFtA', channel: 'Fireship' },
+      { id: 6, title: 'How HTTPS Works', thumbnail: '🔒', videoId: 'j9QmMEWmcfo', channel: 'ByteByteGo' },
     ]
   },
-  history: {
+  software_eng: {
     topics: [
-      { id: 1, title: 'Ancient Civilizations', description: 'Egypt, Greece, and Rome', duration: '30 min' },
-      { id: 2, title: 'Medieval Period', description: 'Feudalism and the Dark Ages', duration: '25 min' },
-      { id: 3, title: 'Renaissance', description: 'Art, science, and cultural rebirth', duration: '20 min' },
-      { id: 4, title: 'World Wars', description: 'WWI and WWII major events', duration: '35 min' },
-      { id: 5, title: 'Modern History', description: 'Cold War to present day', duration: '30 min' },
+      { id: 1, title: 'SDLC Models', description: 'Waterfall, Agile, Spiral, V-model', duration: '25 min' },
+      { id: 2, title: 'Requirements Engineering', description: 'SRS, use cases, user stories', duration: '20 min' },
+      { id: 3, title: 'Software Design', description: 'UML diagrams, architectural patterns', duration: '30 min' },
+      { id: 4, title: 'Testing & QA', description: 'Unit, integration, system testing', duration: '25 min' },
+      { id: 5, title: 'DevOps & CI/CD', description: 'Git, Docker, Jenkins pipelines', duration: '30 min' },
     ],
     videos: [
-      { id: 1, title: 'World History Course', thumbnail: '🏛️', videoId: 'Yocja_N5s1I', channel: 'Crash Course' },
-      { id: 2, title: 'Ancient Egypt', thumbnail: '🏺', videoId: 'hO1tzmi1V5g', channel: 'National Geographic' },
-      { id: 3, title: 'World War II', thumbnail: '⚔️', videoId: 'Q78COTwT7nE', channel: 'Oversimplified' },
-      { id: 4, title: 'Renaissance Period', thumbnail: '🎨', videoId: 'Vufba_ZcoR0', channel: 'TED-Ed' },
-      { id: 5, title: 'Industrial Revolution', thumbnail: '⚙️', videoId: 'zhL5DCizj5c', channel: 'Crash Course' },
-      { id: 6, title: 'Cold War History', thumbnail: '🌐', videoId: 'I79TpDe3t2g', channel: 'Oversimplified' },
+      { id: 1, title: 'Software Engineering Basics', thumbnail: '⚙️', videoId: 'O753uuutqH8', channel: 'freeCodeCamp' },
+      { id: 2, title: 'Agile vs Waterfall', thumbnail: '🔄', videoId: 'GzzkpAOxHXs', channel: 'Atlassian' },
+      { id: 3, title: 'UML Diagrams Course', thumbnail: '📐', videoId: 'WnMQ8HlmeXc', channel: 'freeCodeCamp' },
+      { id: 4, title: 'Git & GitHub Crash Course', thumbnail: '🐙', videoId: 'RGOj5yH7evk', channel: 'Traversy Media' },
+      { id: 5, title: 'Docker in 1 Hour', thumbnail: '🐳', videoId: 'pTFZFxd4hOI', channel: 'Programming with Mosh' },
+      { id: 6, title: 'CI/CD Explained', thumbnail: '🚀', videoId: 'scEDHsr3APg', channel: 'Fireship' },
     ]
   },
-  geography: {
+  web_tech: {
     topics: [
-      { id: 1, title: 'Physical Geography', description: 'Landforms and natural features', duration: '20 min' },
-      { id: 2, title: 'Climate Zones', description: 'World climates and weather patterns', duration: '25 min' },
-      { id: 3, title: 'Maps and Navigation', description: 'Reading and using maps', duration: '15 min' },
-      { id: 4, title: 'Human Geography', description: 'Population and culture', duration: '20 min' },
-      { id: 5, title: 'Environmental Issues', description: 'Climate change and conservation', duration: '25 min' },
+      { id: 1, title: 'HTML & CSS Fundamentals', description: 'Page structure, Flexbox, Grid', duration: '25 min' },
+      { id: 2, title: 'JavaScript Essentials', description: 'ES6+, DOM manipulation, async', duration: '30 min' },
+      { id: 3, title: 'React & Frontend Frameworks', description: 'Components, hooks, state management', duration: '35 min' },
+      { id: 4, title: 'Node.js & Backend', description: 'Express, REST APIs, middleware', duration: '30 min' },
+      { id: 5, title: 'Full-Stack Projects', description: 'MERN stack, deployment, hosting', duration: '35 min' },
     ],
     videos: [
-      { id: 1, title: 'Geography Now!', thumbnail: '🌍', videoId: 'UhXF5FMUdQA', channel: 'Geography Now' },
-      { id: 2, title: 'Climate Zones Explained', thumbnail: '🌡️', videoId: '5lYXj-5lWFg', channel: 'Crash Course' },
-      { id: 3, title: 'Planet Earth', thumbnail: '🌎', videoId: 'i8r3roDnvh8', channel: 'BBC Earth' },
-      { id: 4, title: 'Plate Tectonics', thumbnail: '🌋', videoId: 'pwODwwgE6rA', channel: 'National Geographic' },
-      { id: 5, title: 'World Biomes', thumbnail: '🌲', videoId: 'bpj8ybJkYHs', channel: 'Crash Course' },
-      { id: 6, title: 'Map Reading Skills', thumbnail: '🗺️', videoId: 'NAye4Ir_5Qs', channel: 'Geography Skills' },
+      { id: 1, title: 'HTML & CSS Full Course', thumbnail: '🌐', videoId: 'mU6anWqZJcc', channel: 'freeCodeCamp' },
+      { id: 2, title: 'JavaScript in 1 Hour', thumbnail: '⚡', videoId: 'PkZNo7MFNFg', channel: 'freeCodeCamp' },
+      { id: 3, title: 'React JS Full Course', thumbnail: '⚛️', videoId: 'bMknfKXIFA8', channel: 'freeCodeCamp' },
+      { id: 4, title: 'Node.js Tutorial', thumbnail: '🟢', videoId: 'Oe421EPjeBE', channel: 'freeCodeCamp' },
+      { id: 5, title: 'MERN Stack Project', thumbnail: '🏗️', videoId: '-0exw-9YJBo', channel: 'JavaScript Mastery' },
+      { id: 6, title: 'Next.js in 100 Seconds', thumbnail: '▲', videoId: 'Sklc_fQBmcs', channel: 'Fireship' },
     ]
   },
-  computer: {
+  comp_org: {
     topics: [
-      { id: 1, title: 'Programming Basics', description: 'Variables, loops, and functions', duration: '30 min' },
-      { id: 2, title: 'Web Development', description: 'HTML, CSS, and JavaScript', duration: '35 min' },
-      { id: 3, title: 'Data Structures', description: 'Arrays, lists, and trees', duration: '30 min' },
-      { id: 4, title: 'Algorithms', description: 'Sorting, searching, and optimization', duration: '35 min' },
-      { id: 5, title: 'Computer Networks', description: 'Internet and protocols', duration: '25 min' },
+      { id: 1, title: 'Number Systems & Boolean Algebra', description: 'Binary, octal, hex, logic gates', duration: '25 min' },
+      { id: 2, title: 'Combinational Circuits', description: 'Adders, multiplexers, decoders', duration: '25 min' },
+      { id: 3, title: 'Sequential Circuits', description: 'Flip-flops, registers, counters', duration: '25 min' },
+      { id: 4, title: 'CPU Architecture', description: 'ALU, control unit, instruction cycle', duration: '30 min' },
+      { id: 5, title: 'Memory Hierarchy & I/O', description: 'Cache, RAM, DMA, interrupts', duration: '30 min' },
     ],
     videos: [
-      { id: 1, title: 'Programming for Beginners', thumbnail: '💻', videoId: 'zOjov-2OZ0E', channel: 'freeCodeCamp' },
-      { id: 2, title: 'Web Development Course', thumbnail: '🌐', videoId: 'pQN-pnXPaVg', channel: 'freeCodeCamp' },
-      { id: 3, title: 'Data Structures', thumbnail: '📊', videoId: 'RBSGKlAvoiM', channel: 'freeCodeCamp' },
-      { id: 4, title: 'Python Full Course', thumbnail: '🐍', videoId: '_uQrJ0TkZlc', channel: 'Programming with Mosh' },
-      { id: 5, title: 'JavaScript Tutorial', thumbnail: '⚡', videoId: 'PkZNo7MFNFg', channel: 'freeCodeCamp' },
-      { id: 6, title: 'Algorithms Explained', thumbnail: '🔍', videoId: '8hly31xKli0', channel: 'CS Dojo' },
+      { id: 1, title: 'Computer Architecture Full Course', thumbnail: '🔧', videoId: 'F3kAL_TdEzo', channel: 'Neso Academy' },
+      { id: 2, title: 'How CPU Works', thumbnail: '⚙️', videoId: 'cNN_tTXABkM', channel: 'In One Lesson' },
+      { id: 3, title: 'Logic Gates Explained', thumbnail: '🔌', videoId: 'fw-N9P38mi4', channel: 'Crash Course' },
+      { id: 4, title: 'Cache Memory Explained', thumbnail: '💾', videoId: '6JpLD3PUAZk', channel: 'Computerphile' },
+      { id: 5, title: 'Assembly Language Tutorial', thumbnail: '🔢', videoId: 'wLXIWKUWpSs', channel: 'Fireship' },
+      { id: 6, title: 'Pipelining in CPU', thumbnail: '🏭', videoId: 'FhRXmjudRHE', channel: 'Neso Academy' },
     ]
   },
-  arts: {
+  discrete_math: {
     topics: [
-      { id: 1, title: 'Art History', description: 'Major movements and artists', duration: '25 min' },
-      { id: 2, title: 'Drawing Fundamentals', description: 'Lines, shapes, and shading', duration: '20 min' },
-      { id: 3, title: 'Color Theory', description: 'Color wheel and harmonies', duration: '15 min' },
-      { id: 4, title: 'Painting Techniques', description: 'Watercolor, acrylic, and oil', duration: '30 min' },
-      { id: 5, title: 'Digital Art', description: 'Digital tools and techniques', duration: '25 min' },
+      { id: 1, title: 'Propositional Logic', description: 'Truth tables, logical equivalences', duration: '20 min' },
+      { id: 2, title: 'Set Theory & Relations', description: 'Sets, functions, relations, equivalence', duration: '25 min' },
+      { id: 3, title: 'Graph Theory', description: 'Euler/Hamilton paths, planar graphs, coloring', duration: '30 min' },
+      { id: 4, title: 'Combinatorics', description: 'Permutations, combinations, pigeonhole', duration: '25 min' },
+      { id: 5, title: 'Recurrence Relations', description: 'Solving recurrences, generating functions', duration: '30 min' },
     ],
     videos: [
-      { id: 1, title: 'Art History Overview', thumbnail: '🎨', videoId: 'lB6Be0tkdBE', channel: 'Crash Course' },
-      { id: 2, title: 'Drawing for Beginners', thumbnail: '✏️', videoId: 'ewMksAbgdBI', channel: 'Proko' },
-      { id: 3, title: 'Color Theory Basics', thumbnail: '🖌️', videoId: 'Qj1FK8n7WgY', channel: 'Blender Guru' },
-      { id: 4, title: 'Watercolor Techniques', thumbnail: '💧', videoId: 'ZiGKS8JhwP8', channel: 'Mind of Watercolor' },
-      { id: 5, title: 'Digital Art Tutorial', thumbnail: '🖥️', videoId: 'iwRNeZAa-GY', channel: 'Aaron Blaise' },
-      { id: 6, title: 'Portrait Drawing', thumbnail: '👤', videoId: 'VGLEKLFOSqU', channel: 'Proko' },
+      { id: 1, title: 'Discrete Math Full Course', thumbnail: '🔢', videoId: 'rdXw7Ps9vxc', channel: 'freeCodeCamp' },
+      { id: 2, title: 'Graph Theory Intro', thumbnail: '📊', videoId: 'LFKZLXVO-Dg', channel: 'Reducible' },
+      { id: 3, title: 'Logic & Proofs', thumbnail: '🧮', videoId: 'OM1ANmsKD24', channel: 'Kimberly Brehm' },
+      { id: 4, title: 'Combinatorics Crash Course', thumbnail: '🎲', videoId: 'p8vIcmr_Pqo', channel: 'Crash Course' },
+      { id: 5, title: 'Set Theory Basics', thumbnail: '📐', videoId: 'yCwnifwVjIg', channel: 'Eddie Woo' },
+      { id: 6, title: 'Relations & Functions', thumbnail: '↔️', videoId: 'ouipbDkwHWA', channel: 'Neso Academy' },
+    ]
+  },
+  algorithms: {
+    topics: [
+      { id: 1, title: 'Asymptotic Analysis', description: 'Big-O, Omega, Theta notation', duration: '20 min' },
+      { id: 2, title: 'Divide & Conquer', description: 'Merge sort, quick sort, binary search', duration: '30 min' },
+      { id: 3, title: 'Greedy Algorithms', description: 'Activity selection, Huffman coding', duration: '25 min' },
+      { id: 4, title: 'Dynamic Programming', description: 'Memoization, tabulation, classic problems', duration: '35 min' },
+      { id: 5, title: 'Backtracking & Branch and Bound', description: 'N-Queens, subset sum, TSP', duration: '30 min' },
+    ],
+    videos: [
+      { id: 1, title: 'Algorithms Full Course', thumbnail: '🎯', videoId: '8hly31xKli0', channel: 'freeCodeCamp' },
+      { id: 2, title: 'Big-O Notation Explained', thumbnail: '📈', videoId: 'BgLTDT03QtU', channel: 'NeetCode' },
+      { id: 3, title: 'Dynamic Programming', thumbnail: '🧩', videoId: 'oBt53YbR9Kk', channel: 'freeCodeCamp' },
+      { id: 4, title: 'Sorting Algorithms Visualized', thumbnail: '📊', videoId: 'kPRA0W1kECg', channel: 'Timo Bingmann' },
+      { id: 5, title: 'Greedy Algorithms', thumbnail: '💡', videoId: 'bC7o8P_Ste4', channel: 'Abdul Bari' },
+      { id: 6, title: 'Backtracking Explained', thumbnail: '🔙', videoId: 'Zq4upTEaQyM', channel: 'NeetCode' },
+    ]
+  },
+  ai: {
+    topics: [
+      { id: 1, title: 'Introduction to AI', description: 'History, Turing test, intelligent agents', duration: '20 min' },
+      { id: 2, title: 'Search Algorithms', description: 'BFS, DFS, A*, heuristics', duration: '30 min' },
+      { id: 3, title: 'Knowledge Representation', description: 'Propositional & predicate logic', duration: '25 min' },
+      { id: 4, title: 'Natural Language Processing', description: 'Tokenization, NER, sentiment analysis', duration: '30 min' },
+      { id: 5, title: 'AI Ethics & Applications', description: 'Bias, fairness, real-world AI systems', duration: '25 min' },
+    ],
+    videos: [
+      { id: 1, title: 'AI Full Course', thumbnail: '🤖', videoId: 'JMUxmLyrhSk', channel: 'Edureka' },
+      { id: 2, title: 'AI in 100 Seconds', thumbnail: '⚡', videoId: 'PeMlggyqz0Y', channel: 'Fireship' },
+      { id: 3, title: 'NLP with Python', thumbnail: '💬', videoId: 'xvqsFTUsOmc', channel: 'freeCodeCamp' },
+      { id: 4, title: 'A* Search Algorithm', thumbnail: '🔍', videoId: '-L-WgKMFuhE', channel: 'Computerphile' },
+      { id: 5, title: 'ChatGPT & LLMs Explained', thumbnail: '🧠', videoId: '5sLYAQS9sWQ', channel: '3Blue1Brown' },
+      { id: 6, title: 'AI vs ML vs DL', thumbnail: '📊', videoId: 'pXJfyj2MXZE', channel: 'Simplilearn' },
+    ]
+  },
+  ml: {
+    topics: [
+      { id: 1, title: 'Supervised Learning', description: 'Linear regression, classification, SVM', duration: '30 min' },
+      { id: 2, title: 'Unsupervised Learning', description: 'K-means, PCA, clustering techniques', duration: '25 min' },
+      { id: 3, title: 'Neural Networks', description: 'Perceptron, backpropagation, activation functions', duration: '35 min' },
+      { id: 4, title: 'Deep Learning', description: 'CNNs, RNNs, transformers basics', duration: '35 min' },
+      { id: 5, title: 'Model Evaluation', description: 'Cross-validation, precision, recall, F1', duration: '20 min' },
+    ],
+    videos: [
+      { id: 1, title: 'Machine Learning Full Course', thumbnail: '🤖', videoId: 'NWONeJKn6kc', channel: 'freeCodeCamp' },
+      { id: 2, title: 'Neural Networks Explained', thumbnail: '🧠', videoId: 'aircAruvnKk', channel: '3Blue1Brown' },
+      { id: 3, title: 'ML with Python', thumbnail: '🐍', videoId: '7eh4d6sabA0', channel: 'Programming with Mosh' },
+      { id: 4, title: 'Deep Learning Crash Course', thumbnail: '🔬', videoId: 'VyWAvY2CF9c', channel: 'freeCodeCamp' },
+      { id: 5, title: 'TensorFlow in 10 Minutes', thumbnail: '📐', videoId: 'tpCFfeUEGs8', channel: 'Fireship' },
+      { id: 6, title: 'Random Forest Explained', thumbnail: '🌲', videoId: 'J4Wdy0Wc_xQ', channel: 'StatQuest' },
+    ]
+  },
+  cloud: {
+    topics: [
+      { id: 1, title: 'Cloud Fundamentals', description: 'IaaS, PaaS, SaaS, deployment models', duration: '20 min' },
+      { id: 2, title: 'AWS Core Services', description: 'EC2, S3, Lambda, RDS', duration: '30 min' },
+      { id: 3, title: 'Containerization', description: 'Docker, Kubernetes basics', duration: '30 min' },
+      { id: 4, title: 'Serverless Architecture', description: 'Functions, event-driven, API Gateway', duration: '25 min' },
+      { id: 5, title: 'Cloud Security', description: 'IAM, encryption, compliance', duration: '25 min' },
+    ],
+    videos: [
+      { id: 1, title: 'Cloud Computing Full Course', thumbnail: '☁️', videoId: 'M988_fsOSWo', channel: 'Edureka' },
+      { id: 2, title: 'AWS in 10 Minutes', thumbnail: '🟠', videoId: 'r4YIdn2eTm4', channel: 'Fireship' },
+      { id: 3, title: 'Docker Crash Course', thumbnail: '🐳', videoId: 'pg19Z8LL06w', channel: 'TechWorld with Nana' },
+      { id: 4, title: 'Kubernetes Explained', thumbnail: '⎈', videoId: 'X48VuDVv0do', channel: 'TechWorld with Nana' },
+      { id: 5, title: 'Azure Fundamentals', thumbnail: '🔵', videoId: 'NKEFWyqJ5XA', channel: 'freeCodeCamp' },
+      { id: 6, title: 'Serverless in 100 Seconds', thumbnail: '⚡', videoId: 'W_VV2Fx32_Y', channel: 'Fireship' },
+    ]
+  },
+  cyber: {
+    topics: [
+      { id: 1, title: 'Security Fundamentals', description: 'CIA triad, threats, vulnerabilities', duration: '20 min' },
+      { id: 2, title: 'Cryptography', description: 'Symmetric, asymmetric, hashing, PKI', duration: '30 min' },
+      { id: 3, title: 'Network Security', description: 'Firewalls, IDS/IPS, VPN', duration: '25 min' },
+      { id: 4, title: 'Ethical Hacking', description: 'Penetration testing, OWASP Top 10', duration: '30 min' },
+      { id: 5, title: 'Incident Response', description: 'Forensics, threat hunting, SIEM', duration: '25 min' },
+    ],
+    videos: [
+      { id: 1, title: 'Cybersecurity Full Course', thumbnail: '🔒', videoId: 'U_P23SqJaDc', channel: 'freeCodeCamp' },
+      { id: 2, title: 'Ethical Hacking Course', thumbnail: '🎭', videoId: '3Kq1MIfTWCE', channel: 'freeCodeCamp' },
+      { id: 3, title: 'Cryptography Explained', thumbnail: '🔐', videoId: 'jhXCTbFnK8o', channel: 'Fireship' },
+      { id: 4, title: 'OWASP Top 10', thumbnail: '🕷️', videoId: 'rWHvp7rUka8', channel: 'OWASP' },
+      { id: 5, title: 'Linux for Hackers', thumbnail: '🐧', videoId: 'VbEx7B_PTOE', channel: 'NetworkChuck' },
+      { id: 6, title: 'How VPNs Work', thumbnail: '🛡️', videoId: 'WVDQEoe6ZWY', channel: 'Fireship' },
+    ]
+  },
+  mobile_dev: {
+    topics: [
+      { id: 1, title: 'Mobile App Fundamentals', description: 'Native vs cross-platform, architecture', duration: '20 min' },
+      { id: 2, title: 'React Native', description: 'Components, navigation, state management', duration: '35 min' },
+      { id: 3, title: 'Flutter & Dart', description: 'Widgets, layouts, material design', duration: '35 min' },
+      { id: 4, title: 'Mobile UI/UX Design', description: 'Design principles, responsive layouts', duration: '25 min' },
+      { id: 5, title: 'Publishing Apps', description: 'Play Store, App Store, CI/CD for mobile', duration: '20 min' },
+    ],
+    videos: [
+      { id: 1, title: 'React Native Full Course', thumbnail: '📱', videoId: 'obH0Po_RdWk', channel: 'freeCodeCamp' },
+      { id: 2, title: 'Flutter Crash Course', thumbnail: '🦋', videoId: 'x0uinJvhNxI', channel: 'Fireship' },
+      { id: 3, title: 'Android Development', thumbnail: '🤖', videoId: 'fis26HvvDII', channel: 'freeCodeCamp' },
+      { id: 4, title: 'iOS Development with Swift', thumbnail: '🍎', videoId: 'comQ1-x2a1Q', channel: 'CodeWithChris' },
+      { id: 5, title: 'Kotlin for Android', thumbnail: '🟣', videoId: 'F9UC9DY-vIU', channel: 'freeCodeCamp' },
+      { id: 6, title: 'React Native in 100 Seconds', thumbnail: '⚡', videoId: 'gvkqT_Uoahw', channel: 'Fireship' },
+    ]
+  },
+  big_data: {
+    topics: [
+      { id: 1, title: 'Big Data Concepts', description: "5 V's, distributed computing basics", duration: '20 min' },
+      { id: 2, title: 'Hadoop Ecosystem', description: 'HDFS, MapReduce, YARN', duration: '30 min' },
+      { id: 3, title: 'Apache Spark', description: 'RDDs, DataFrames, Spark SQL', duration: '30 min' },
+      { id: 4, title: 'Data Pipelines', description: 'Kafka, Airflow, ETL processes', duration: '25 min' },
+      { id: 5, title: 'Data Warehousing', description: 'Star schema, OLAP, data lakes', duration: '25 min' },
+    ],
+    videos: [
+      { id: 1, title: 'Big Data Full Course', thumbnail: '📊', videoId: 'KCEPoPJ8sYc', channel: 'Edureka' },
+      { id: 2, title: 'Hadoop Tutorial', thumbnail: '🐘', videoId: 'aReuLtY0YMI', channel: 'Edureka' },
+      { id: 3, title: 'Apache Spark Course', thumbnail: '⚡', videoId: '_C8kWso4ne4', channel: 'freeCodeCamp' },
+      { id: 4, title: 'Apache Kafka Explained', thumbnail: '📡', videoId: 'uvb00oaa3k8', channel: 'IBM Technology' },
+      { id: 5, title: 'Data Engineering Roadmap', thumbnail: '🗺️', videoId: 'qWru-b6m3uo', channel: 'Fireship' },
+      { id: 6, title: 'ETL Explained', thumbnail: '🔄', videoId: 'OW5OgsLpDCQ', channel: 'IBM Technology' },
+    ]
+  },
+  data_science: {
+    topics: [
+      { id: 1, title: 'Data Science Workflow', description: 'Data collection, cleaning, EDA', duration: '20 min' },
+      { id: 2, title: 'Python for Data Science', description: 'NumPy, Pandas, Matplotlib', duration: '30 min' },
+      { id: 3, title: 'Statistical Analysis', description: 'Hypothesis testing, distributions', duration: '25 min' },
+      { id: 4, title: 'Data Visualization', description: 'Seaborn, Plotly, dashboard design', duration: '25 min' },
+      { id: 5, title: 'Predictive Modeling', description: 'Regression, classification, pipelines', duration: '30 min' },
+    ],
+    videos: [
+      { id: 1, title: 'Data Science Full Course', thumbnail: '📊', videoId: 'ua-CiDNNj30', channel: 'freeCodeCamp' },
+      { id: 2, title: 'Python Pandas Tutorial', thumbnail: '🐼', videoId: 'vmEHCJofslg', channel: 'Programming with Mosh' },
+      { id: 3, title: 'Statistics Fundamentals', thumbnail: '📈', videoId: 'xxpc-HPKN28', channel: 'StatQuest' },
+      { id: 4, title: 'Data Visualization with Python', thumbnail: '📉', videoId: 'GGL6U0bDzGk', channel: 'freeCodeCamp' },
+      { id: 5, title: 'Jupyter Notebook Tutorial', thumbnail: '📓', videoId: 'HW29067qVWk', channel: 'Corey Schafer' },
+      { id: 6, title: 'Kaggle Competition Walk-through', thumbnail: '🏆', videoId: 'GrLlNnQIjwE', channel: 'Ken Jee' },
     ]
   }
 };
 
 export default function LearnScreen() {
-  const [selectedSubject, setSelectedSubject] = useState('math');
+  const [selectedSubject, setSelectedSubject] = useState('c_programming');
 
   // Get current subject content
-  const currentContent = SUBJECT_CONTENT[selectedSubject] || SUBJECT_CONTENT.math;
+  const currentContent = SUBJECT_CONTENT[selectedSubject] || SUBJECT_CONTENT.c_programming;
   const currentSubjectData = SUBJECTS.find(s => s.id === selectedSubject) || SUBJECTS[0];
 
   // Open YouTube video
@@ -203,21 +339,10 @@ export default function LearnScreen() {
     Linking.openURL(url).catch(err => console.error('Error opening video:', err));
   };
 
-  // Get subject icon
+  // Get subject icon from SUBJECTS config
   const getSubjectIcon = (subjectId) => {
-    const icons = {
-      math: 'calculator',
-      science: 'flask',
-      english: 'book',
-      history: 'time',
-      geography: 'globe',
-      physics: 'nuclear',
-      chemistry: 'beaker',
-      biology: 'leaf',
-      computer: 'laptop',
-      arts: 'color-palette',
-    };
-    return icons[subjectId] || 'school';
+    const subject = SUBJECTS.find(s => s.id === subjectId);
+    return subject?.icon || 'school';
   };
 
   return (
@@ -229,19 +354,19 @@ export default function LearnScreen() {
         {/* Header */}
         <FadeInDown delay={0} style={styles.header}>
           <Text style={styles.title}>Learn</Text>
-          <Text style={styles.subtitle}>Your personalized learning journey</Text>
+          <Text style={styles.subtitle}>Your CS learning journey starts here</Text>
         </FadeInDown>
 
         {/* Subject Selection - Horizontal Scroll */}
         <FadeInDown delay={100}>
-          <Text style={styles.sectionTitle}>📖 Choose Subject</Text>
+          <Text style={styles.sectionTitle}>💻 Choose Subject</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.subjectScroll}
             contentContainerStyle={styles.subjectScrollContent}
           >
-            {SUBJECTS.slice(0, 10).map((subject, index) => (
+            {SUBJECTS.map((subject, index) => (
               <TouchableOpacity
                 key={subject.id}
                 style={[
@@ -360,11 +485,11 @@ export default function LearnScreen() {
           <View style={styles.tipsCard}>
             <View style={styles.tipsHeader}>
               <Ionicons name="bulb" size={24} color={Colors.accent} />
-              <Text style={styles.tipsTitle}>Study Tip</Text>
+              <Text style={styles.tipsTitle}>Pro Tip</Text>
             </View>
             <Text style={styles.tipsText}>
-              Watch video lessons first, then practice with topics.
-              Take quizzes to test your understanding! 🎯
+              Watch video lessons first, then practice coding alongside.
+              Take mock tests to solidify your understanding! 🚀
             </Text>
           </View>
         </FadeInDown>

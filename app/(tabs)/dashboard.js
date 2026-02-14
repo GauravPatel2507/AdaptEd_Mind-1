@@ -25,7 +25,7 @@ const NOTIFICATIONS = [
   {
     id: 1,
     title: 'Quiz Completed!',
-    message: 'You scored 92% in Mathematics Quiz',
+    message: 'You scored 92% in Data Structures Quiz',
     type: 'success',
     time: '2h ago',
     read: false,
@@ -35,12 +35,12 @@ const NOTIFICATIONS = [
   {
     id: 2,
     title: 'New Lesson Available',
-    message: 'Physics: Electromagnetic Waves is now available',
+    message: 'Web Technologies: React & Frontend Frameworks is now available',
     type: 'info',
     time: '5h ago',
     read: false,
     icon: 'book',
-    route: '/subject/physics'
+    route: '/subject/web_tech'
   },
   {
     id: 3,
@@ -464,19 +464,8 @@ export default function DashboardScreen() {
 }
 
 const getSubjectIcon = (subjectId) => {
-  const icons = {
-    math: 'calculator',
-    science: 'flask',
-    english: 'book',
-    history: 'time',
-    geography: 'globe',
-    physics: 'nuclear',
-    chemistry: 'beaker',
-    biology: 'leaf',
-    computer: 'laptop',
-    arts: 'color-palette',
-  };
-  return icons[subjectId] || 'school';
+  const subject = SUBJECTS.find(s => s.id === subjectId);
+  return subject?.icon || 'school';
 };
 
 const styles = StyleSheet.create({
