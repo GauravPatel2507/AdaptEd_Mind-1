@@ -17,6 +17,7 @@ import { SUBJECTS } from '../../constants/Config';
 import { FadeInDown, FadeInRight } from '../../components/Animations';
 import { db } from '../../config/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -68,12 +69,18 @@ export default function DashboardScreen() {
   });
   const [recentActivity, setRecentActivity] = useState([]);
   const [subjectProgress, setSubjectProgress] = useState({});
+  const [lastLearning, setLastLearning] = useState(null);
 
   // Fetch real data from Firebase
   const fetchDashboardData = useCallback(async () => {
     if (!user) return;
 
     try {
+      // Load last learning activity from AsyncStorage
+      const lastActivity = await AsyncStorage.getItem('lastLearningActivity');
+      if (lastActivity) {
+        setLastLearning(JSON.parse(lastActivity));
+      }
       // Fetch quiz results
       const quizResultsRef = collection(db, 'quizResults');
       const q = query(quizResultsRef, where('userId', '==', user.uid));
@@ -331,6 +338,27 @@ export default function DashboardScreen() {
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
+          {/* Continue Learning Card — always visible */}
+          <FadeInDown delay={280}>
+            <TouchableOpacity
+              style={styles.continueActivityCard}
+              onPress={() => router.push('/(tabs)/learn')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.continueActivityIcon, { backgroundColor: (lastLearning ? (SUBJECTS.find(s => s.id === lastLearning.subjectId)?.color || Colors.primary) : Colors.primary) + '20' }]}>
+                <Ionicons name="play-circle" size={28} color={lastLearning ? (SUBJECTS.find(s => s.id === lastLearning.subjectId)?.color || Colors.primary) : Colors.primary} />
+              </View>
+              <View style={styles.continueActivityContent}>
+                <Text style={styles.continueActivityLabel}>{lastLearning ? 'Resume last lesson' : 'Start Learning'}</Text>
+                <Text style={styles.continueActivityTitle} numberOfLines={1}>{lastLearning ? (lastLearning.topicTitle || lastLearning.videoTitle || 'Continue Learning') : 'Introduction to C'}</Text>
+                <Text style={styles.continueActivitySubject}>{lastLearning ? lastLearning.subjectName : 'Programming in C'}</Text>
+              </View>
+              <View style={styles.continueActivityButton}>
+                <Ionicons name="arrow-forward" size={18} color="#fff" />
+              </View>
+            </TouchableOpacity>
+          </FadeInDown>
+
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.subjectsScroll}>
             {SUBJECTS.slice(0, 5).map((subject, index) => (
               <FadeInRight key={subject.id} delay={index * 100}>
@@ -827,5 +855,54 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     color: Colors.textMuted,
     marginTop: Spacing.xs,
+  },
+  // Continue Activity Card styles
+  continueActivityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.primary + '25',
+    ...Shadows.sm,
+  },
+  continueActivityIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.md,
+  },
+  continueActivityContent: {
+    flex: 1,
+  },
+  continueActivityLabel: {
+    fontSize: FontSizes.xs,
+    color: Colors.primary,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  continueActivityTitle: {
+    fontSize: FontSizes.md,
+    fontWeight: '600',
+    color: Colors.text,
+    marginTop: 2,
+  },
+  continueActivitySubject: {
+    fontSize: FontSizes.sm,
+    color: Colors.textLight,
+    marginTop: 1,
+  },
+  continueActivityButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
