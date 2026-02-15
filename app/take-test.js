@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
@@ -7,7 +7,9 @@ import {
     TouchableOpacity,
     Dimensions,
     ActivityIndicator,
-    Alert
+    Alert,
+    Modal,
+    Vibration
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -19,8 +21,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../config/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
+const AUTOSAVE_KEY = 'test_autosave_state';
 
 export default function TakeTestScreen() {
     const params = useLocalSearchParams();
@@ -37,24 +41,124 @@ export default function TakeTestScreen() {
     const [score, setScore] = useState(0);
     const [savingResults, setSavingResults] = useState(false);
     const [aiInsight, setAiInsight] = useState(null);
-    const timerRef = useRef(null);
+    // New state
+    const [visitedQuestions, setVisitedQuestions] = useState(new Set([0]));
+    const [expandedReview, setExpandedReview] = useState(null);
+    const [showExitModal, setShowExitModal] = useState(false);
 
-    // Parse questions if passed as param, otherwise generate
+    const timerRef = useRef(null);
+    const totalTimeRef = useRef(0);
+    const hasVibratedRef = useRef(false);
+
+    // Derived values (memoized)
+    const answeredCount = useMemo(() => Object.keys(selectedAnswers).length, [selectedAnswers]);
+    const answeredPercentage = useMemo(
+        () => questions.length > 0 ? (answeredCount / questions.length) * 100 : 0,
+        [answeredCount, questions.length]
+    );
+    const positionPercentage = useMemo(
+        () => questions.length > 0 ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0,
+        [currentQuestionIndex, questions.length]
+    );
+    const showFloatingSubmit = useMemo(
+        () => !testCompleted && answeredPercentage >= 70,
+        [testCompleted, answeredPercentage]
+    );
+
+    // Timer color gradient based on remaining time percentage
+    const getTimerColor = useCallback(() => {
+        if (totalTimeRef.current === 0) return Colors.primary;
+        const pct = timeRemaining / totalTimeRef.current;
+        if (pct > 0.5) return '#10B981';
+        if (pct > 0.25) return '#F59E0B';
+        if (pct > 0.1) return '#F97316';
+        return '#EF4444';
+    }, [timeRemaining]);
+
+    // --- Autosave / Restore ---
+    const saveTestState = useCallback(async (answers, qIndex, time, visited) => {
+        try {
+            await AsyncStorage.setItem(AUTOSAVE_KEY, JSON.stringify({
+                subject,
+                subjectIdParam,
+                difficulty,
+                questionsData: questions,
+                answers,
+                currentQuestionIndex: qIndex,
+                timeRemaining: time,
+                visitedQuestions: [...visited],
+                totalTime: totalTimeRef.current,
+                savedAt: Date.now(),
+            }));
+        } catch (e) { /* silent */ }
+    }, [subject, subjectIdParam, difficulty, questions]);
+
+    const clearSavedState = useCallback(async () => {
+        try { await AsyncStorage.removeItem(AUTOSAVE_KEY); } catch (e) { /* silent */ }
+    }, []);
+
+    // --- Initialize test ---
     useEffect(() => {
         const initializeTest = async () => {
+            // Check for saved state first
+            try {
+                const saved = await AsyncStorage.getItem(AUTOSAVE_KEY);
+                if (saved) {
+                    const state = JSON.parse(saved);
+                    // Resume only if same subject and saved within last 2 hours
+                    if (state.subject === subject && (Date.now() - state.savedAt) < 2 * 60 * 60 * 1000 && state.questionsData?.length > 0) {
+                        return new Promise((resolve) => {
+                            Alert.alert(
+                                'Resume Test?',
+                                `You have a saved ${subject} test in progress. Resume where you left off?`,
+                                [
+                                    {
+                                        text: 'Start Fresh',
+                                        style: 'destructive',
+                                        onPress: async () => {
+                                            await clearSavedState();
+                                            await loadFreshTest();
+                                            resolve();
+                                        }
+                                    },
+                                    {
+                                        text: 'Resume',
+                                        onPress: () => {
+                                            setQuestions(state.questionsData);
+                                            setSelectedAnswers(state.answers || {});
+                                            setCurrentQuestionIndex(state.currentQuestionIndex || 0);
+                                            setTimeRemaining(state.timeRemaining || parseInt(timeLimitParam || 15) * 60);
+                                            totalTimeRef.current = state.totalTime || parseInt(timeLimitParam || 15) * 60;
+                                            setVisitedQuestions(new Set(state.visitedQuestions || [0]));
+                                            setIsLoading(false);
+                                            resolve();
+                                        }
+                                    }
+                                ]
+                            );
+                        });
+                    } else {
+                        await clearSavedState();
+                    }
+                }
+            } catch (e) { /* ignore */ }
+            await loadFreshTest();
+        };
+
+        const loadFreshTest = async () => {
             if (questionsParam) {
-                // Questions were passed directly
                 try {
                     const parsedQuestions = JSON.parse(questionsParam);
                     setQuestions(parsedQuestions);
-                    setTimeRemaining(parseInt(timeLimitParam || 15) * 60);
+                    const time = parseInt(timeLimitParam || 15) * 60;
+                    setTimeRemaining(time);
+                    totalTimeRef.current = time;
                     setIsLoading(false);
                 } catch (e) {
                     console.error('Error parsing questions:', e);
                     await generateNewTest();
                 }
             } else {
-                // Generate new test
                 await generateNewTest();
             }
         };
@@ -69,7 +173,9 @@ export default function TakeTestScreen() {
 
                 if (result.success) {
                     setQuestions(result.data.questions);
-                    setTimeRemaining(result.data.timeLimit * 60);
+                    const time = result.data.timeLimit * 60;
+                    setTimeRemaining(time);
+                    totalTimeRef.current = time;
                 } else {
                     Alert.alert('Error', 'Failed to generate test. Please try again.');
                     router.back();
@@ -86,7 +192,7 @@ export default function TakeTestScreen() {
         initializeTest();
     }, []);
 
-    // Timer effect
+    // Timer effect with vibration at 30s
     useEffect(() => {
         if (!isLoading && !testCompleted && timeRemaining > 0) {
             timerRef.current = setInterval(() => {
@@ -95,6 +201,11 @@ export default function TakeTestScreen() {
                         clearInterval(timerRef.current);
                         handleSubmitTest();
                         return 0;
+                    }
+                    // Vibrate at 30s
+                    if (prev === 31 && !hasVibratedRef.current) {
+                        hasVibratedRef.current = true;
+                        try { Vibration.vibrate([0, 300, 100, 300]); } catch (e) { /* silent */ }
                     }
                     return prev - 1;
                 });
@@ -108,36 +219,70 @@ export default function TakeTestScreen() {
         };
     }, [isLoading, testCompleted]);
 
-    const formatTime = (seconds) => {
+    // Autosave on answer/navigation changes
+    useEffect(() => {
+        if (!isLoading && !testCompleted && questions.length > 0) {
+            saveTestState(selectedAnswers, currentQuestionIndex, timeRemaining, visitedQuestions);
+        }
+    }, [selectedAnswers, currentQuestionIndex]);
+
+    const formatTime = useCallback((seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
+    }, []);
 
-    const handleSelectAnswer = (questionIndex, answerIndex) => {
+    const handleSelectAnswer = useCallback((questionIndex, answerIndex) => {
         if (testCompleted) return;
         setSelectedAnswers(prev => ({
             ...prev,
             [questionIndex]: answerIndex
         }));
-    };
+    }, [testCompleted]);
 
-    const handleNextQuestion = () => {
+    const handleNextQuestion = useCallback(() => {
         if (currentQuestionIndex < questions.length - 1) {
-            setCurrentQuestionIndex(prev => prev + 1);
+            const nextIdx = currentQuestionIndex + 1;
+            setCurrentQuestionIndex(nextIdx);
+            setVisitedQuestions(prev => new Set([...prev, nextIdx]));
         }
-    };
+    }, [currentQuestionIndex, questions.length]);
 
-    const handlePreviousQuestion = () => {
+    const handlePreviousQuestion = useCallback(() => {
         if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev - 1);
+            const prevIdx = currentQuestionIndex - 1;
+            setCurrentQuestionIndex(prevIdx);
+            setVisitedQuestions(prev => new Set([...prev, prevIdx]));
         }
-    };
+    }, [currentQuestionIndex]);
+
+    const jumpToQuestion = useCallback((index) => {
+        setCurrentQuestionIndex(index);
+        setVisitedQuestions(prev => new Set([...prev, index]));
+    }, []);
+
+    // Exit confirmation
+    const handleExitPress = useCallback(() => {
+        if (testCompleted) {
+            router.back();
+        } else {
+            setShowExitModal(true);
+        }
+    }, [testCompleted]);
+
+    const confirmExit = useCallback(async () => {
+        setShowExitModal(false);
+        await clearSavedState();
+        if (timerRef.current) clearInterval(timerRef.current);
+        router.back();
+    }, [clearSavedState]);
 
     const handleSubmitTest = async () => {
         if (timerRef.current) {
             clearInterval(timerRef.current);
         }
+        // Clear autosave
+        await clearSavedState();
 
         // Calculate score
         let correctCount = 0;
@@ -163,14 +308,13 @@ export default function TakeTestScreen() {
         setShowResults(true);
         setSavingResults(true);
 
-        // Generate AI insight based on performance
-        const insight = generateAIInsight(percentage, correctCount, questions.length);
+        // Generate smarter AI insight
+        const insight = generateSmartInsight(percentage, correctCount, questions, selectedAnswers);
         setAiInsight(insight);
 
         // Save to Firebase if user is logged in
         if (user) {
             try {
-                // Save quiz result
                 await addDoc(collection(db, 'quizResults'), {
                     userId: user.uid,
                     subject: subject,
@@ -179,18 +323,17 @@ export default function TakeTestScreen() {
                     correctAnswers: correctCount,
                     totalQuestions: questions.length,
                     difficulty: difficulty || 'adaptive',
-                    timeSpent: (parseInt(timeLimitParam || 15) * 60) - timeRemaining,
+                    timeSpent: totalTimeRef.current - timeRemaining,
                     questionResults: questionResults,
                     createdAt: new Date().toISOString()
                 });
 
-                // Update progress for this subject
                 const resolvedSubjectId = subjectIdParam || (SUBJECTS.find(s => s.name === subject)?.id) || subject.toLowerCase().replace(/\s+/g, '');
                 await updateProgress(user.uid, resolvedSubjectId, {
                     lastQuizScore: percentage,
-                    totalQuizzesTaken: 1, // Will be incremented in service
+                    totalQuizzesTaken: 1,
                     lastActivity: new Date().toISOString(),
-                    averageScore: percentage // Service will calculate running average
+                    averageScore: percentage
                 });
 
                 console.log('Quiz results saved successfully!');
@@ -202,48 +345,65 @@ export default function TakeTestScreen() {
         setSavingResults(false);
     };
 
-    // Generate AI insight based on quiz performance
-    const generateAIInsight = (percentage, correct, total) => {
+    // Smarter AI insight — analyzes wrong answers by topic/pattern
+    const generateSmartInsight = (percentage, correct, qs, answers) => {
+        const wrongQuestions = qs.filter((q, i) => answers[i] !== q.correct);
+        const skippedQuestions = qs.filter((q, i) => answers[i] === undefined);
+
+        // Group wrong answers by topic if available
+        const wrongTopics = wrongQuestions.map(q => q.topic || q.category || subject).filter(Boolean);
+        const topicCounts = {};
+        wrongTopics.forEach(t => { topicCounts[t] = (topicCounts[t] || 0) + 1; });
+        const weakestTopic = Object.entries(topicCounts).sort((a, b) => b[1] - a[1])[0];
+
+        const timeUsed = totalTimeRef.current - timeRemaining;
+        const avgTimePerQ = qs.length > 0 ? Math.round(timeUsed / qs.length) : 0;
+        const wasRushed = avgTimePerQ < 30;
+
         if (percentage >= 90) {
             return {
                 type: 'excellent',
-                title: '🌟 Outstanding Performance!',
-                message: `You mastered this topic! Consider trying harder difficulty or exploring advanced concepts in ${subject}.`,
-                recommendation: 'Move to next level'
+                title: '\u{1F31F} Outstanding Performance!',
+                message: `You mastered this test! ${correct}/${qs.length} correct in ${formatTime(timeUsed)}. Consider trying a harder difficulty.`,
+                recommendation: 'Challenge yourself with harder difficulty',
+                tips: ['Try timing yourself with less time', `Explore advanced ${subject} topics`]
             };
         } else if (percentage >= 75) {
             return {
                 type: 'good',
-                title: '👏 Great Job!',
-                message: `You have a solid understanding. Focus on the ${total - correct} question(s) you missed to achieve mastery.`,
-                recommendation: 'Review weak areas'
+                title: '\u{1F44F} Great Job!',
+                message: `Solid performance! You missed ${qs.length - correct} question${qs.length - correct > 1 ? 's' : ''}.${weakestTopic ? ` Focus on "${weakestTopic[0]}" where you missed ${weakestTopic[1]} question(s).` : ''}`,
+                recommendation: weakestTopic ? `Review ${weakestTopic[0]}` : 'Review missed questions',
+                tips: [`Practice "${weakestTopic?.[0] || subject}" problems`, 'Review explanations for missed questions']
             };
         } else if (percentage >= 60) {
             return {
                 type: 'average',
-                title: '💪 Keep Going!',
-                message: `You're on the right track! Practice more ${subject} problems to strengthen your understanding.`,
-                recommendation: 'Practice more'
+                title: '\u{1F4AA} Keep Going!',
+                message: `You're making progress! ${wasRushed ? 'You may have rushed — try spending more time per question. ' : ''}${weakestTopic ? `Weakest area: "${weakestTopic[0]}" (${weakestTopic[1]} wrong). ` : ''}${skippedQuestions.length > 0 ? `You skipped ${skippedQuestions.length} question(s).` : ''}`,
+                recommendation: weakestTopic ? `Focus on ${weakestTopic[0]}` : 'Practice more',
+                tips: [weakestTopic ? `Study ${weakestTopic[0]} fundamentals` : `Review ${subject} basics`, wasRushed ? 'Read questions more carefully' : 'Practice with timed tests']
             };
         } else if (percentage >= 40) {
             return {
                 type: 'needsWork',
-                title: '📚 More Practice Needed',
-                message: `Don't worry! Review the basics of ${subject} and try again. Each attempt helps you learn.`,
-                recommendation: 'Review fundamentals'
+                title: '\u{1F4DA} More Practice Needed',
+                message: `Don't give up! ${weakestTopic ? `"${weakestTopic[0]}" seems challenging. ` : ''}${skippedQuestions.length > 0 ? `Try answering all questions next time. ` : ''}Review the learning material before retrying.`,
+                recommendation: 'Start with fundamentals',
+                tips: ['Review the learning section for this subject', weakestTopic ? `Focus on ${weakestTopic[0]}` : 'Take notes while studying', 'Try easier difficulty']
             };
         } else {
             return {
                 type: 'struggling',
-                title: '🎯 Let\'s Build Your Foundation',
-                message: `Start with beginner lessons in ${subject}. Take your time to understand core concepts before testing again.`,
-                recommendation: 'Start from basics'
+                title: '\u{1F3AF} Let\'s Build Your Foundation',
+                message: `Start with beginner lessons in ${subject}. ${weakestTopic ? `"${weakestTopic[0]}" needs the most attention. ` : ''}Understanding basics will help you score much higher.`,
+                recommendation: 'Start from basics',
+                tips: ['Go through learning material first', 'Try with easier difficulty', 'Take untimed practice tests']
             };
         }
     };
 
-    const confirmSubmit = () => {
-        const answeredCount = Object.keys(selectedAnswers).length;
+    const confirmSubmit = useCallback(() => {
         const unansweredCount = questions.length - answeredCount;
 
         if (unansweredCount > 0) {
@@ -258,7 +418,43 @@ export default function TakeTestScreen() {
         } else {
             handleSubmitTest();
         }
-    };
+    }, [questions.length, answeredCount]);
+
+    // Retry test handler
+    const handleRetryTest = useCallback(() => {
+        setSelectedAnswers({});
+        setCurrentQuestionIndex(0);
+        setVisitedQuestions(new Set([0]));
+        setTestCompleted(false);
+        setShowResults(false);
+        setScore(0);
+        setAiInsight(null);
+        setExpandedReview(null);
+        hasVibratedRef.current = false;
+        setTimeRemaining(totalTimeRef.current);
+    }, []);
+
+    // Practice incorrect only
+    const handlePracticeIncorrect = useCallback(() => {
+        const incorrectQuestions = questions.filter((q, i) => selectedAnswers[i] !== q.correct);
+        if (incorrectQuestions.length === 0) {
+            Alert.alert('Perfect Score!', 'You answered everything correctly!');
+            return;
+        }
+        const practiceTime = Math.max(incorrectQuestions.length * 90, 120);
+        setQuestions(incorrectQuestions);
+        setSelectedAnswers({});
+        setCurrentQuestionIndex(0);
+        setVisitedQuestions(new Set([0]));
+        setTestCompleted(false);
+        setShowResults(false);
+        setScore(0);
+        setAiInsight(null);
+        setExpandedReview(null);
+        hasVibratedRef.current = false;
+        setTimeRemaining(practiceTime);
+        totalTimeRef.current = practiceTime;
+    }, [questions, selectedAnswers]);
 
     // Loading screen
     if (isLoading) {
@@ -317,7 +513,7 @@ export default function TakeTestScreen() {
                     )}
                 </View>
 
-                {/* AI Insight Card */}
+                {/* AI Insight Card - Enhanced with tips */}
                 {aiInsight && (
                     <View style={styles.aiInsightCard}>
                         <View style={styles.aiInsightHeader}>
@@ -326,6 +522,16 @@ export default function TakeTestScreen() {
                         </View>
                         <Text style={styles.aiInsightTitle}>{aiInsight.title}</Text>
                         <Text style={styles.aiInsightMessage}>{aiInsight.message}</Text>
+                        {aiInsight.tips && aiInsight.tips.length > 0 && (
+                            <View style={styles.tipsContainer}>
+                                {aiInsight.tips.map((tip, i) => (
+                                    <View key={i} style={styles.tipRow}>
+                                        <Ionicons name="checkmark-circle-outline" size={16} color={Colors.secondary} />
+                                        <Text style={styles.tipText}>{tip}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
                         <View style={styles.aiRecommendation}>
                             <Ionicons name="arrow-forward-circle" size={18} color={Colors.primary} />
                             <Text style={styles.aiRecommendationText}>
@@ -337,76 +543,106 @@ export default function TakeTestScreen() {
 
                 <Text style={styles.reviewTitle}>📋 Review Answers</Text>
 
+                {/* Collapsible review cards */}
                 {questions.map((question, index) => {
                     const userAnswer = selectedAnswers[index];
                     const isCorrect = userAnswer === question.correct;
                     const wasAnswered = userAnswer !== undefined;
+                    const isExpanded = expandedReview === index;
 
                     return (
-                        <View key={index} style={styles.reviewCard}>
+                        <TouchableOpacity
+                            key={index}
+                            style={styles.reviewCard}
+                            onPress={() => setExpandedReview(isExpanded ? null : index)}
+                            activeOpacity={0.7}
+                        >
                             <View style={styles.reviewHeader}>
                                 <Text style={styles.reviewQuestionNumber}>Q{index + 1}</Text>
-                                <View style={[
-                                    styles.reviewStatus,
-                                    { backgroundColor: isCorrect ? '#10B98120' : '#EF444420' }
-                                ]}>
-                                    <Ionicons
-                                        name={isCorrect ? 'checkmark-circle' : 'close-circle'}
-                                        size={16}
-                                        color={isCorrect ? '#10B981' : '#EF4444'}
-                                    />
-                                    <Text style={[
-                                        styles.reviewStatusText,
-                                        { color: isCorrect ? '#10B981' : '#EF4444' }
+                                <View style={styles.reviewHeaderRight}>
+                                    <View style={[
+                                        styles.reviewStatus,
+                                        { backgroundColor: isCorrect ? '#10B98120' : '#EF444420' }
                                     ]}>
-                                        {isCorrect ? 'Correct' : wasAnswered ? 'Incorrect' : 'Skipped'}
-                                    </Text>
+                                        <Ionicons
+                                            name={isCorrect ? 'checkmark-circle' : 'close-circle'}
+                                            size={16}
+                                            color={isCorrect ? '#10B981' : '#EF4444'}
+                                        />
+                                        <Text style={[
+                                            styles.reviewStatusText,
+                                            { color: isCorrect ? '#10B981' : '#EF4444' }
+                                        ]}>
+                                            {isCorrect ? 'Correct' : wasAnswered ? 'Incorrect' : 'Skipped'}
+                                        </Text>
+                                    </View>
+                                    <Ionicons
+                                        name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                                        size={18}
+                                        color={Colors.textLight}
+                                    />
                                 </View>
                             </View>
 
-                            <Text style={styles.reviewQuestion}>{question.question}</Text>
+                            {isExpanded && (
+                                <>
+                                    <Text style={styles.reviewQuestion}>{question.question}</Text>
 
-                            <View style={styles.reviewOptions}>
-                                {question.options.map((option, optIndex) => {
-                                    const isCorrectOption = optIndex === question.correct;
-                                    const isUserAnswer = optIndex === userAnswer;
+                                    <View style={styles.reviewOptions}>
+                                        {question.options.map((option, optIndex) => {
+                                            const isCorrectOption = optIndex === question.correct;
+                                            const isUserAnswer = optIndex === userAnswer;
 
-                                    return (
-                                        <View
-                                            key={optIndex}
-                                            style={[
-                                                styles.reviewOption,
-                                                isCorrectOption && styles.reviewOptionCorrect,
-                                                isUserAnswer && !isCorrectOption && styles.reviewOptionWrong
-                                            ]}
-                                        >
-                                            <Text style={[
-                                                styles.reviewOptionText,
-                                                isCorrectOption && styles.reviewOptionTextCorrect,
-                                                isUserAnswer && !isCorrectOption && styles.reviewOptionTextWrong
-                                            ]}>
-                                                {String.fromCharCode(65 + optIndex)}. {option}
-                                            </Text>
-                                            {isCorrectOption && (
-                                                <Ionicons name="checkmark" size={18} color="#10B981" />
-                                            )}
-                                            {isUserAnswer && !isCorrectOption && (
-                                                <Ionicons name="close" size={18} color="#EF4444" />
-                                            )}
+                                            return (
+                                                <View
+                                                    key={optIndex}
+                                                    style={[
+                                                        styles.reviewOption,
+                                                        isCorrectOption && styles.reviewOptionCorrect,
+                                                        isUserAnswer && !isCorrectOption && styles.reviewOptionWrong
+                                                    ]}
+                                                >
+                                                    <Text style={[
+                                                        styles.reviewOptionText,
+                                                        isCorrectOption && styles.reviewOptionTextCorrect,
+                                                        isUserAnswer && !isCorrectOption && styles.reviewOptionTextWrong
+                                                    ]}>
+                                                        {String.fromCharCode(65 + optIndex)}. {option}
+                                                    </Text>
+                                                    {isCorrectOption && (
+                                                        <Ionicons name="checkmark" size={18} color="#10B981" />
+                                                    )}
+                                                    {isUserAnswer && !isCorrectOption && (
+                                                        <Ionicons name="close" size={18} color="#EF4444" />
+                                                    )}
+                                                </View>
+                                            );
+                                        })}
+                                    </View>
+
+                                    {question.explanation && (
+                                        <View style={styles.explanationBox}>
+                                            <Ionicons name="bulb" size={16} color={Colors.accent} />
+                                            <Text style={styles.explanationText}>{question.explanation}</Text>
                                         </View>
-                                    );
-                                })}
-                            </View>
-
-                            {question.explanation && (
-                                <View style={styles.explanationBox}>
-                                    <Ionicons name="bulb" size={16} color={Colors.accent} />
-                                    <Text style={styles.explanationText}>{question.explanation}</Text>
-                                </View>
+                                    )}
+                                </>
                             )}
-                        </View>
+                        </TouchableOpacity>
                     );
                 })}
+
+                {/* Retry action buttons */}
+                <View style={styles.resultActions}>
+                    <TouchableOpacity style={styles.retryButton} onPress={handleRetryTest}>
+                        <Ionicons name="refresh" size={20} color={Colors.primary} />
+                        <Text style={styles.retryButtonText}>Retry Test</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.practiceButton} onPress={handlePracticeIncorrect}>
+                        <Ionicons name="fitness" size={20} color={Colors.accent} />
+                        <Text style={styles.practiceButtonText}>Practice Incorrect</Text>
+                    </TouchableOpacity>
+                </View>
 
                 <TouchableOpacity
                     style={styles.finishButton}
@@ -422,14 +658,45 @@ export default function TakeTestScreen() {
 
     // Test taking screen
     const currentQuestion = questions[currentQuestionIndex];
-    const answeredCount = Object.keys(selectedAnswers).length;
-    const progressPercentage = (answeredCount / questions.length) * 100;
+    const timerColor = getTimerColor();
 
     return (
         <View style={styles.container}>
+            {/* Exit Confirmation Modal */}
+            <Modal
+                visible={showExitModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowExitModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalCard}>
+                        <Ionicons name="warning" size={48} color="#F59E0B" />
+                        <Text style={styles.modalTitle}>Leave Test?</Text>
+                        <Text style={styles.modalMessage}>
+                            Leaving will discard your test progress. Your answers won't be saved.
+                        </Text>
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity
+                                style={styles.modalCancelButton}
+                                onPress={() => setShowExitModal(false)}
+                            >
+                                <Text style={styles.modalCancelText}>Continue Test</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.modalLeaveButton}
+                                onPress={confirmExit}
+                            >
+                                <Text style={styles.modalLeaveText}>Leave</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <TouchableOpacity onPress={handleExitPress} style={styles.backButton}>
                     <Ionicons name="close" size={24} color={Colors.text} />
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
@@ -438,27 +705,31 @@ export default function TakeTestScreen() {
                         Question {currentQuestionIndex + 1} of {questions.length}
                     </Text>
                 </View>
-                <View style={[styles.timerBadge, timeRemaining < 60 && styles.timerBadgeUrgent]}>
+                <View style={[styles.timerBadge, { backgroundColor: timerColor + '15' }]}>
                     <Ionicons
                         name="time"
                         size={16}
-                        color={timeRemaining < 60 ? '#EF4444' : Colors.primary}
+                        color={timerColor}
                     />
-                    <Text style={[
-                        styles.timerText,
-                        timeRemaining < 60 && styles.timerTextUrgent
-                    ]}>
+                    <Text style={[styles.timerText, { color: timerColor }]}>
                         {formatTime(timeRemaining)}
                     </Text>
                 </View>
             </View>
 
-            {/* Progress bar */}
+            {/* Dual Progress bar */}
             <View style={styles.progressContainer}>
-                <View style={styles.progressBar}>
-                    <View style={[styles.progressFill, { width: `${progressPercentage}%` }]} />
+                <View style={styles.progressBarWrapper}>
+                    {/* Position indicator (thin) */}
+                    <View style={styles.positionBar}>
+                        <View style={[styles.positionFill, { width: `${positionPercentage}%` }]} />
+                    </View>
+                    {/* Answered percentage (main) */}
+                    <View style={styles.progressBar}>
+                        <View style={[styles.progressFill, { width: `${answeredPercentage}%` }]} />
+                    </View>
                 </View>
-                <Text style={styles.progressText}>{answeredCount}/{questions.length} answered</Text>
+                <Text style={styles.progressText}>{answeredCount}/{questions.length}</Text>
             </View>
 
             {/* Question */}
@@ -513,33 +784,53 @@ export default function TakeTestScreen() {
                 </View>
             </ScrollView>
 
+            {/* Floating Submit Button */}
+            {showFloatingSubmit && (
+                <TouchableOpacity
+                    style={styles.floatingSubmit}
+                    onPress={confirmSubmit}
+                    activeOpacity={0.8}
+                >
+                    <Ionicons name="checkmark-done" size={20} color="#fff" />
+                    <Text style={styles.floatingSubmitText}>Submit Test</Text>
+                </TouchableOpacity>
+            )}
+
             {/* Navigation */}
             <View style={styles.navigation}>
-                {/* Question dots */}
+                {/* Question dots - 3 states */}
                 <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.dotsContainer}
                 >
-                    {questions.map((_, index) => (
-                        <TouchableOpacity
-                            key={index}
-                            style={[
-                                styles.questionDot,
-                                currentQuestionIndex === index && styles.questionDotActive,
-                                selectedAnswers[index] !== undefined && styles.questionDotAnswered
-                            ]}
-                            onPress={() => setCurrentQuestionIndex(index)}
-                        >
-                            <Text style={[
-                                styles.questionDotText,
-                                currentQuestionIndex === index && styles.questionDotTextActive,
-                                selectedAnswers[index] !== undefined && styles.questionDotTextAnswered
-                            ]}>
-                                {index + 1}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
+                    {questions.map((_, index) => {
+                        const isActive = currentQuestionIndex === index;
+                        const isAnswered = selectedAnswers[index] !== undefined;
+                        const isVisited = visitedQuestions.has(index) && !isAnswered;
+
+                        return (
+                            <TouchableOpacity
+                                key={index}
+                                style={[
+                                    styles.questionDot,
+                                    isActive && styles.questionDotActive,
+                                    isAnswered && styles.questionDotAnswered,
+                                    isVisited && !isActive && styles.questionDotVisited,
+                                ]}
+                                onPress={() => jumpToQuestion(index)}
+                            >
+                                <Text style={[
+                                    styles.questionDotText,
+                                    isActive && styles.questionDotTextActive,
+                                    isAnswered && styles.questionDotTextAnswered,
+                                    isVisited && !isActive && styles.questionDotTextVisited,
+                                ]}>
+                                    {index + 1}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
                 </ScrollView>
 
                 {/* Navigation buttons */}
@@ -643,22 +934,14 @@ const styles = StyleSheet.create({
     timerBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Colors.primary + '15',
         paddingHorizontal: Spacing.md,
         paddingVertical: Spacing.xs,
         borderRadius: BorderRadius.full,
         gap: Spacing.xs,
     },
-    timerBadgeUrgent: {
-        backgroundColor: '#EF444420',
-    },
     timerText: {
         fontSize: FontSizes.md,
         fontWeight: '600',
-        color: Colors.primary,
-    },
-    timerTextUrgent: {
-        color: '#EF4444',
     },
     progressContainer: {
         flexDirection: 'row',
@@ -667,8 +950,22 @@ const styles = StyleSheet.create({
         paddingVertical: Spacing.sm,
         gap: Spacing.md,
     },
-    progressBar: {
+    progressBarWrapper: {
         flex: 1,
+        gap: 3,
+    },
+    positionBar: {
+        height: 3,
+        backgroundColor: Colors.cardBorder,
+        borderRadius: 2,
+        overflow: 'hidden',
+    },
+    positionFill: {
+        height: '100%',
+        backgroundColor: Colors.primary + '60',
+        borderRadius: 2,
+    },
+    progressBar: {
         height: 6,
         backgroundColor: Colors.cardBorder,
         borderRadius: 3,
@@ -761,6 +1058,26 @@ const styles = StyleSheet.create({
         color: Colors.primary,
         fontWeight: '500',
     },
+    // Floating submit
+    floatingSubmit: {
+        position: 'absolute',
+        bottom: 140,
+        right: Spacing.lg,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: Colors.secondary,
+        paddingHorizontal: Spacing.lg,
+        paddingVertical: Spacing.md,
+        borderRadius: BorderRadius.full,
+        gap: Spacing.xs,
+        ...Shadows.lg,
+        elevation: 8,
+    },
+    floatingSubmitText: {
+        fontSize: FontSizes.md,
+        fontWeight: '600',
+        color: '#fff',
+    },
     navigation: {
         backgroundColor: Colors.surface,
         borderTopWidth: 1,
@@ -792,6 +1109,11 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.secondary + '30',
         borderColor: Colors.secondary,
     },
+    questionDotVisited: {
+        borderColor: '#F59E0B',
+        borderWidth: 2,
+        backgroundColor: '#F59E0B10',
+    },
     questionDotText: {
         fontSize: FontSizes.xs,
         color: Colors.textLight,
@@ -802,6 +1124,9 @@ const styles = StyleSheet.create({
     },
     questionDotTextAnswered: {
         color: Colors.secondary,
+    },
+    questionDotTextVisited: {
+        color: '#F59E0B',
     },
     navButtons: {
         flexDirection: 'row',
@@ -853,6 +1178,68 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#fff',
     },
+    // Exit Modal
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: Spacing.lg,
+    },
+    modalCard: {
+        backgroundColor: Colors.surface,
+        borderRadius: BorderRadius.xl,
+        padding: Spacing.xl,
+        alignItems: 'center',
+        width: '100%',
+        maxWidth: 340,
+        ...Shadows.lg,
+    },
+    modalTitle: {
+        fontSize: FontSizes.xl,
+        fontWeight: '700',
+        color: Colors.text,
+        marginTop: Spacing.md,
+    },
+    modalMessage: {
+        fontSize: FontSizes.md,
+        color: Colors.textLight,
+        textAlign: 'center',
+        marginTop: Spacing.sm,
+        lineHeight: 22,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        gap: Spacing.md,
+        marginTop: Spacing.xl,
+        width: '100%',
+    },
+    modalCancelButton: {
+        flex: 1,
+        backgroundColor: Colors.primary,
+        paddingVertical: Spacing.md,
+        borderRadius: BorderRadius.md,
+        alignItems: 'center',
+    },
+    modalCancelText: {
+        color: '#fff',
+        fontWeight: '600',
+        fontSize: FontSizes.md,
+    },
+    modalLeaveButton: {
+        flex: 1,
+        backgroundColor: Colors.background,
+        paddingVertical: Spacing.md,
+        borderRadius: BorderRadius.md,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: Colors.cardBorder,
+    },
+    modalLeaveText: {
+        color: '#EF4444',
+        fontWeight: '600',
+        fontSize: FontSizes.md,
+    },
     // Results styles
     resultsContent: {
         padding: Spacing.lg,
@@ -902,6 +1289,7 @@ const styles = StyleSheet.create({
         marginTop: Spacing.md,
         textAlign: 'center',
     },
+    // Review
     reviewTitle: {
         fontSize: FontSizes.lg,
         fontWeight: '600',
@@ -919,7 +1307,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: Spacing.sm,
+    },
+    reviewHeaderRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
     },
     reviewQuestionNumber: {
         fontSize: FontSizes.md,
@@ -942,6 +1334,7 @@ const styles = StyleSheet.create({
         fontSize: FontSizes.md,
         color: Colors.text,
         marginBottom: Spacing.sm,
+        marginTop: Spacing.sm,
         lineHeight: 22,
     },
     reviewOptions: {
@@ -988,12 +1381,52 @@ const styles = StyleSheet.create({
         color: Colors.text,
         lineHeight: 20,
     },
+    // Result actions
+    resultActions: {
+        flexDirection: 'row',
+        gap: Spacing.md,
+        marginTop: Spacing.lg,
+    },
+    retryButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: Colors.primary + '15',
+        paddingVertical: Spacing.md,
+        borderRadius: BorderRadius.md,
+        gap: Spacing.xs,
+        borderWidth: 1,
+        borderColor: Colors.primary + '30',
+    },
+    retryButtonText: {
+        fontSize: FontSizes.md,
+        fontWeight: '600',
+        color: Colors.primary,
+    },
+    practiceButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: Colors.accent + '15',
+        paddingVertical: Spacing.md,
+        borderRadius: BorderRadius.md,
+        gap: Spacing.xs,
+        borderWidth: 1,
+        borderColor: Colors.accent + '30',
+    },
+    practiceButtonText: {
+        fontSize: FontSizes.md,
+        fontWeight: '600',
+        color: Colors.accent,
+    },
     finishButton: {
         backgroundColor: Colors.primary,
         borderRadius: BorderRadius.md,
         padding: Spacing.md,
         alignItems: 'center',
-        marginTop: Spacing.lg,
+        marginTop: Spacing.md,
     },
     finishButtonText: {
         fontSize: FontSizes.md,
@@ -1043,6 +1476,20 @@ const styles = StyleSheet.create({
         color: Colors.textLight,
         lineHeight: 22,
         marginBottom: Spacing.md,
+    },
+    tipsContainer: {
+        marginBottom: Spacing.md,
+        gap: Spacing.xs,
+    },
+    tipRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.xs,
+    },
+    tipText: {
+        fontSize: FontSizes.sm,
+        color: Colors.text,
+        flex: 1,
     },
     aiRecommendation: {
         flexDirection: 'row',

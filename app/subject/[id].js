@@ -226,8 +226,8 @@ export default function SubjectDetailScreen() {
   const [activeTab, setActiveTab] = useState('lessons');
 
   const subject = SUBJECTS.find(s => s.id === id) || SUBJECTS[0];
-  const lessons = SUBJECT_LESSONS[id] || SUBJECT_LESSONS.math;
-  const quizzes = SUBJECT_QUIZZES[id] || SUBJECT_QUIZZES.math;
+  const lessons = SUBJECT_LESSONS[id] || SUBJECT_LESSONS.c_programming;
+  const quizzes = SUBJECT_QUIZZES[id] || SUBJECT_QUIZZES.c_programming;
 
   // Calculate overall progress
   const totalProgress = lessons.reduce((sum, l) => sum + l.progress, 0);
@@ -305,7 +305,7 @@ export default function SubjectDetailScreen() {
           <>
             {lessons.map((lesson, index) => (
               <FadeInUp key={lesson.id} delay={300 + index * 50}>
-                <TouchableOpacity style={styles.lessonCard}>
+                <TouchableOpacity style={styles.lessonCard} onPress={() => router.push('/(tabs)/learn')}>
                   <View style={styles.lessonLeft}>
                     <View style={[styles.lessonNumber, {
                       backgroundColor: lesson.progress === 100 ? Colors.secondary : Colors.background
@@ -383,7 +383,16 @@ export default function SubjectDetailScreen() {
 
       {/* Continue Button */}
       <FadeInUp delay={500} style={styles.continueContainer}>
-        <TouchableOpacity style={[styles.continueButton, { backgroundColor: subject.color }]}>
+        <TouchableOpacity
+          style={[styles.continueButton, { backgroundColor: subject.color }]}
+          onPress={() => {
+            if (activeTab === 'lessons') {
+              router.push('/(tabs)/learn');
+            } else {
+              router.push('/(tabs)/tests');
+            }
+          }}
+        >
           <Text style={styles.continueButtonText}>
             {activeTab === 'lessons' ? 'Continue Learning' : 'Start Quiz'}
           </Text>

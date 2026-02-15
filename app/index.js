@@ -1,13 +1,15 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated } from 'react-native';
 import { Redirect } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
 import { Colors, FontSizes, Spacing } from '../constants/Colors';
 
 const { width, height } = Dimensions.get('window');
+const MIN_SPLASH_DURATION = 1500; // 1.5 seconds minimum
 
 export default function SplashScreen() {
   const { user, loading } = useAuth();
+  const [minDurationMet, setMinDurationMet] = useState(false);
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -15,6 +17,9 @@ export default function SplashScreen() {
   const titleTranslateY = useRef(new Animated.Value(20)).current;
 
   useEffect(() => {
+    // Minimum splash duration timer
+    const timer = setTimeout(() => setMinDurationMet(true), MIN_SPLASH_DURATION);
+
     // Pulse animation for logo
     Animated.loop(
       Animated.sequence([
@@ -53,10 +58,12 @@ export default function SplashScreen() {
         useNativeDriver: true,
       }),
     ]).start();
+
+    return () => clearTimeout(timer);
   }, []);
 
-  // Show loading screen while checking auth
-  if (loading) {
+  // Show splash while auth is loading OR minimum duration hasn't passed
+  if (loading || !minDurationMet) {
     return (
       <View style={styles.container}>
         {/* Background decorations */}
