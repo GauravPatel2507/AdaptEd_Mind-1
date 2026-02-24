@@ -25,7 +25,7 @@ const computeAdaptiveDifficulty = (avgScore) => {
   return 'easy';
 };
 
-// Generate AI-powered test using Gemini API
+// Generate AI-powered test using Groq API
 export const generateAITest = async (subject, config = {}) => {
   const {
     numberOfQuestions = 10,
@@ -70,23 +70,26 @@ Requirements:
 - Include practical application questions where applicable`;
 
   try {
-    const response = await fetch(`${AI_CONFIG.GEMINI_API_URL}?key=${AI_CONFIG.GEMINI_API_KEY}`, {
+    const response = await fetch(AI_CONFIG.GROQ_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${AI_CONFIG.GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 8192,
-        }
+        model: AI_CONFIG.GROQ_MODEL,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a quiz generator. You ONLY output valid JSON arrays. No markdown, no explanations, no extra text.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 8192,
       })
     });
 
@@ -100,8 +103,8 @@ Requirements:
 
     const data = await response.json();
 
-    // Extract the generated text
-    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    // Extract the generated text from Groq response
+    const generatedText = data.choices?.[0]?.message?.content;
 
     if (!generatedText) {
       throw new Error('No response from AI');
@@ -127,15 +130,17 @@ Requirements:
       throw new Error('Invalid question format received');
     }
 
-    // Ensure each question has required fields
-    const validatedQuestions = shuffleQuestionOptions(questions.map((q, index) => ({
-      id: q.id || index + 1,
-      question: q.question,
-      options: q.options,
-      correct: q.correct,
-      explanation: q.explanation || 'No explanation provided',
-      difficulty: effectiveDifficulty
-    })));
+    // Ensure each question has required fields and limit to requested count
+    const validatedQuestions = shuffleQuestionOptions(
+      questions.slice(0, numberOfQuestions).map((q, index) => ({
+        id: q.id || index + 1,
+        question: q.question,
+        options: q.options,
+        correct: q.correct,
+        explanation: q.explanation || 'No explanation provided',
+        difficulty: effectiveDifficulty
+      }))
+    );
 
     return {
       success: true,
