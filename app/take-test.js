@@ -28,7 +28,7 @@ const AUTOSAVE_KEY = 'test_autosave_state';
 
 export default function TakeTestScreen() {
     const params = useLocalSearchParams();
-    const { subject, subjectId: subjectIdParam, subjectColor, questions: questionsParam, timeLimit: timeLimitParam, difficulty } = params;
+    const { subject, subjectId: subjectIdParam, subjectColor, questions: questionsParam, timeLimit: timeLimitParam, difficulty, numberOfQuestions: numberOfQuestionsParam } = params;
     const { user } = useAuth();
 
     const [isLoading, setIsLoading] = useState(true);
@@ -166,7 +166,7 @@ export default function TakeTestScreen() {
         const generateNewTest = async () => {
             try {
                 const result = await generateAITest(subject, {
-                    numberOfQuestions: 10,
+                    numberOfQuestions: parseInt(numberOfQuestionsParam || 10),
                     difficulty: difficulty || 'adaptive',
                     timeLimit: parseInt(timeLimitParam || 15)
                 });

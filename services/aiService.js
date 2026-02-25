@@ -127,15 +127,17 @@ Requirements:
       throw new Error('Invalid question format received');
     }
 
-    // Ensure each question has required fields
-    const validatedQuestions = shuffleQuestionOptions(questions.map((q, index) => ({
-      id: q.id || index + 1,
-      question: q.question,
-      options: q.options,
-      correct: q.correct,
-      explanation: q.explanation || 'No explanation provided',
-      difficulty: effectiveDifficulty
-    })));
+    // Ensure each question has required fields and limit to requested count
+    const validatedQuestions = shuffleQuestionOptions(
+      questions.slice(0, numberOfQuestions).map((q, index) => ({
+        id: q.id || index + 1,
+        question: q.question,
+        options: q.options,
+        correct: q.correct,
+        explanation: q.explanation || 'No explanation provided',
+        difficulty: effectiveDifficulty
+      }))
+    );
 
     return {
       success: true,
