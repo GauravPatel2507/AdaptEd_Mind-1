@@ -159,7 +159,8 @@ export default function TestsScreen() {
             subjectColor: selectedSubject.color,
             questions: JSON.stringify(result.data.questions),
             timeLimit: testConfig.timeLimit,
-            difficulty: result.data.difficulty
+            difficulty: result.data.difficulty,
+            numberOfQuestions: testConfig.questions
           }
         });
       } else {
