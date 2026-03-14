@@ -2,7 +2,7 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { View, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, BorderRadius } from '../../constants/Colors';
+import { Colors, Fonts, Spacing, BorderRadius } from '../../constants/Colors';
 
 export default function TabsLayout() {
   return (
@@ -19,7 +19,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: 'Home',
+          title: 'HOME',
           tabBarIcon: ({ color, size, focused }) => (
             <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
               <Ionicons name={focused ? "home" : "home-outline"} size={22} color={color} />
@@ -30,7 +30,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="progress"
         options={{
-          title: 'Progress',
+          title: 'PROGRESS',
           tabBarIcon: ({ color, size, focused }) => (
             <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
               <Ionicons name={focused ? "stats-chart" : "stats-chart-outline"} size={22} color={color} />
@@ -41,7 +41,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="learn"
         options={{
-          title: 'Learn',
+          title: 'LEARN',
           tabBarIcon: ({ color, size, focused }) => (
             <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
               <Ionicons name={focused ? "book" : "book-outline"} size={22} color={color} />
@@ -52,7 +52,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="tests"
         options={{
-          title: 'Tests',
+          title: 'TESTS',
           tabBarIcon: ({ color, size, focused }) => (
             <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
               <Ionicons name={focused ? "document-text" : "document-text-outline"} size={22} color={color} />
@@ -63,7 +63,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="buddies"
         options={{
-          title: 'Buddies',
+          title: 'BUDDIES',
           tabBarIcon: ({ color, size, focused }) => (
             <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
               <Ionicons name={focused ? "people" : "people-outline"} size={22} color={color} />
@@ -74,7 +74,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: 'PROFILE',
           tabBarIcon: ({ color, size, focused }) => (
             <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
               <Ionicons name={focused ? "person" : "person-outline"} size={22} color={color} />
@@ -91,20 +91,23 @@ const styles = StyleSheet.create({
     position: 'absolute',
     height: Platform.OS === 'ios' ? 85 : 65,
     backgroundColor: Colors.surface,
-    borderTopWidth: 0,
+    borderTopWidth: 1,
+    borderTopColor: Colors.cardBorder,
     borderTopLeftRadius: BorderRadius.xl,
     borderTopRightRadius: BorderRadius.xl,
     paddingTop: Spacing.sm,
     paddingHorizontal: Spacing.sm,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowColor: '#1c1c1c',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 4,
   },
   tabBarLabel: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 9,
+    fontFamily: Fonts.mono,
+    fontWeight: '400',
+    letterSpacing: 1.5,
     marginBottom: Platform.OS === 'ios' ? 0 : Spacing.sm,
   },
   iconContainer: {
@@ -115,6 +118,6 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
   },
   iconContainerActive: {
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    backgroundColor: Colors.primary + '12',
   },
 });

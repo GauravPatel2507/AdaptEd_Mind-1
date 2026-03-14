@@ -15,7 +15,7 @@ import {
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
-import { Colors, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
+import { Colors, Fonts, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
 import { FadeInDown } from '../../components/Animations';
 import { db } from '../../config/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -560,17 +560,22 @@ const styles = StyleSheet.create({
   roleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    backgroundColor: Colors.primary + '10',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
+    borderRadius: BorderRadius.sm,
     marginTop: Spacing.sm,
     gap: Spacing.xs,
+    borderWidth: 1,
+    borderColor: Colors.primary + '20',
   },
   roleText: {
-    fontSize: FontSizes.sm,
-    fontWeight: '500',
+    fontSize: FontSizes.xs,
+    fontFamily: Fonts.mono,
+    fontWeight: '400',
     color: Colors.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -580,36 +585,44 @@ const styles = StyleSheet.create({
   statsCard: {
     flex: 1,
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.md,
     padding: Spacing.md,
     alignItems: 'center',
-    ...Shadows.sm,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
   },
   statsValue: {
     fontSize: FontSizes.xl,
+    fontFamily: Fonts.monoBold,
     fontWeight: '700',
     color: Colors.text,
     marginTop: Spacing.xs,
   },
   statsLabel: {
-    fontSize: FontSizes.xs,
-    color: Colors.textLight,
+    fontSize: 10,
+    fontFamily: Fonts.mono,
+    color: Colors.textMuted,
     marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   sectionTitle: {
     fontSize: FontSizes.lg,
-    fontWeight: '600',
+    fontFamily: Fonts.heading,
+    fontWeight: '300',
     color: Colors.text,
     marginBottom: Spacing.sm,
+    letterSpacing: -0.3,
   },
   reportCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.md,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
-    ...Shadows.sm,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
   },
   reportIcon: {
     width: 48,
@@ -625,11 +638,13 @@ const styles = StyleSheet.create({
   },
   reportTitle: {
     fontSize: FontSizes.md,
-    fontWeight: '600',
+    fontFamily: Fonts.bodyMedium,
+    fontWeight: '500',
     color: Colors.text,
   },
   reportSubtitle: {
     fontSize: FontSizes.sm,
+    fontFamily: Fonts.body,
     color: Colors.textLight,
     marginTop: 2,
   },
@@ -643,9 +658,10 @@ const styles = StyleSheet.create({
   },
   settingsCard: {
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.xl,
+    borderRadius: BorderRadius.md,
     overflow: 'hidden',
-    ...Shadows.sm,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
   },
   settingsItem: {
     flexDirection: 'row',
@@ -672,6 +688,7 @@ const styles = StyleSheet.create({
   },
   settingsItemTitle: {
     fontSize: FontSizes.md,
+    fontFamily: Fonts.body,
     color: Colors.text,
   },
   settingsItemRight: {
@@ -681,33 +698,42 @@ const styles = StyleSheet.create({
   },
   settingsItemValue: {
     fontSize: FontSizes.sm,
+    fontFamily: Fonts.mono,
     color: Colors.textLight,
+    letterSpacing: 0.3,
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.error + '10',
+    borderRadius: BorderRadius.sm,
     padding: Spacing.md,
     marginTop: Spacing.lg,
     gap: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.error + '20',
   },
   logoutButtonText: {
-    fontSize: FontSizes.md,
-    fontWeight: '600',
+    fontSize: FontSizes.sm,
+    fontFamily: Fonts.mono,
+    fontWeight: '400',
     color: Colors.error,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
   versionText: {
-    fontSize: FontSizes.sm,
+    fontSize: FontSizes.xs,
+    fontFamily: Fonts.mono,
     color: Colors.textMuted,
     textAlign: 'center',
     marginTop: Spacing.lg,
+    letterSpacing: 0.5,
   },
   // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(28, 28, 28, 0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
@@ -727,8 +753,10 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: FontSizes.xl,
-    fontWeight: '700',
+    fontFamily: Fonts.heading,
+    fontWeight: '300',
     color: Colors.text,
+    letterSpacing: -0.3,
   },
   modalBody: {
     paddingHorizontal: Spacing.lg,
@@ -745,8 +773,10 @@ const styles = StyleSheet.create({
   },
   aboutAppName: {
     fontSize: FontSizes.xxl,
-    fontWeight: '700',
+    fontFamily: Fonts.heading,
+    fontWeight: '300',
     color: Colors.text,
+    letterSpacing: -0.5,
   },
   aboutVersion: {
     fontSize: FontSizes.sm,
@@ -758,9 +788,11 @@ const styles = StyleSheet.create({
   },
   aboutSectionTitle: {
     fontSize: FontSizes.lg,
-    fontWeight: '600',
+    fontFamily: Fonts.heading,
+    fontWeight: '300',
     color: Colors.text,
     marginBottom: Spacing.sm,
+    letterSpacing: -0.3,
   },
   aboutText: {
     fontSize: FontSizes.md,
@@ -790,9 +822,11 @@ const styles = StyleSheet.create({
   },
   privacySectionTitle: {
     fontSize: FontSizes.lg,
-    fontWeight: '600',
+    fontFamily: Fonts.heading,
+    fontWeight: '300',
     color: Colors.text,
     marginBottom: Spacing.sm,
+    letterSpacing: -0.3,
   },
   privacyText: {
     fontSize: FontSizes.md,
