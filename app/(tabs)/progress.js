@@ -18,6 +18,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../config/firebase';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { router } from 'expo-router';
+import { SectionDivider } from '../../components/EditorialComponents';
 
 const { width } = Dimensions.get('window');
 
@@ -487,6 +488,8 @@ export default function ProgressScreen() {
             ))}
           </View>
         )}
+
+        <SectionDivider label="Insights" />
 
         {/* AI Study Recommendation */}
         {aiRecommendation && stats.totalTests > 0 && (

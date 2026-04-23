@@ -296,10 +296,10 @@ export default function TakeTestScreen() {
                 correctCount++;
             }
             questionResults.push({
-                questionId: question.id,
+                questionId: question.id ?? null,
                 correct: isCorrect,
-                userAnswer: selectedAnswers[index],
-                correctAnswer: question.correct
+                userAnswer: selectedAnswers[index] !== undefined ? selectedAnswers[index] : null,
+                correctAnswer: question.correct !== undefined ? question.correct : null
             });
         });
 
@@ -319,14 +319,19 @@ export default function TakeTestScreen() {
             try {
                 await addDoc(collection(db, 'quizResults'), {
                     userId: user.uid,
-                    subject: subject,
-                    subjectId: subjectIdParam || (SUBJECTS.find(s => s.name === subject)?.id) || subject.toLowerCase().replace(/\s+/g, ''),
+                    subject: subject || 'Unknown',
+                    subjectId: subjectIdParam || (SUBJECTS.find(s => s.name === subject)?.id) || subject?.toLowerCase().replace(/\s+/g, '') || 'unknown',
                     score: percentage,
                     correctAnswers: correctCount,
                     totalQuestions: questions.length,
                     difficulty: difficulty || 'adaptive',
-                    timeSpent: totalTimeRef.current - timeRemaining,
-                    questionResults: questionResults,
+                    timeSpent: (totalTimeRef.current - timeRemaining) || 0,
+                    questionResults: questionResults.map(qr => ({
+                        questionId: qr.questionId ?? null,
+                        correct: qr.correct ?? false,
+                        userAnswer: qr.userAnswer ?? null,
+                        correctAnswer: qr.correctAnswer ?? null,
+                    })),
                     createdAt: new Date().toISOString()
                 });
 

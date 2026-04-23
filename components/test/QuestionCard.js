@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
+import { Colors, Fonts, Spacing, BorderRadius, FontSizes } from '../../constants/Colors';
 
 const QuestionCard = ({
   question,
@@ -37,6 +37,7 @@ const QuestionCard = ({
               ]}
               onPress={() => !disabled && onSelectAnswer(questionIndex, index)}
               disabled={disabled}
+              activeOpacity={0.7}
             >
               <View style={[
                 styles.optionLetter,
@@ -56,7 +57,7 @@ const QuestionCard = ({
                 {option}
               </Text>
               {isSelected && (
-                <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />
+                <Ionicons name="checkmark-circle" size={22} color={Colors.primary} />
               )}
             </TouchableOpacity>
           );
@@ -69,26 +70,33 @@ const QuestionCard = ({
 const styles = StyleSheet.create({
   questionCard: {
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.md,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
-    ...Shadows.sm,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
   },
   questionNumberBadge: {
-    backgroundColor: Colors.primary + '15',
+    backgroundColor: Colors.primary + '10',
     alignSelf: 'flex-start',
     paddingHorizontal: Spacing.sm,
     paddingVertical: 4,
     borderRadius: BorderRadius.sm,
     marginBottom: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.primary + '20',
   },
   questionNumberText: {
-    fontSize: FontSizes.sm,
-    fontWeight: '700',
+    fontSize: FontSizes.xs,
+    fontFamily: Fonts.mono,
+    fontWeight: '400',
     color: Colors.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
   },
   questionText: {
     fontSize: FontSizes.lg,
+    fontFamily: Fonts.bodyMedium,
     fontWeight: '500',
     color: Colors.text,
     lineHeight: 28,
@@ -102,29 +110,32 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: Colors.cardBorder,
-    ...Shadows.sm,
   },
   optionCardSelected: {
     borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '08',
+    backgroundColor: Colors.primary + '06',
   },
   optionLetter: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: BorderRadius.sm,
     backgroundColor: Colors.background,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
   },
   optionLetterSelected: {
     backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   optionLetterText: {
-    fontSize: FontSizes.md,
-    fontWeight: '700',
+    fontSize: FontSizes.sm,
+    fontFamily: Fonts.mono,
+    fontWeight: '400',
     color: Colors.textLight,
   },
   optionLetterTextSelected: {
@@ -133,11 +144,13 @@ const styles = StyleSheet.create({
   optionText: {
     flex: 1,
     fontSize: FontSizes.md,
+    fontFamily: Fonts.body,
     color: Colors.text,
     lineHeight: 22,
   },
   optionTextSelected: {
-    fontWeight: '600',
+    fontFamily: Fonts.bodyMedium,
+    fontWeight: '500',
     color: Colors.primary,
   },
 });

@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, BorderRadius, FontSizes } from '../../constants/Colors';
+import { Colors, Fonts, Spacing, BorderRadius, FontSizes } from '../../constants/Colors';
 
 const TestHeader = ({
   subject,
@@ -23,16 +23,16 @@ const TestHeader = ({
       {/* Header bar */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onExit} style={styles.backButton}>
-          <Ionicons name="close" size={24} color={Colors.text} />
+          <Ionicons name="close" size={22} color={Colors.text} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>{subject}</Text>
           <Text style={styles.headerSubtitle}>
-            Question {currentQuestionIndex + 1} of {totalQuestions}
+            QUESTION {currentQuestionIndex + 1} OF {totalQuestions}
           </Text>
         </View>
-        <View style={[styles.timerBadge, { backgroundColor: timerColor + '15' }]}>
-          <Ionicons name="time" size={16} color={timerColor} />
+        <View style={[styles.timerBadge, { backgroundColor: timerColor + '10', borderColor: timerColor + '20' }]}>
+          <Ionicons name="time-outline" size={14} color={timerColor} />
           <Text style={[styles.timerText, { color: timerColor }]}>
             {formatTime(timeRemaining)}
           </Text>
@@ -75,12 +75,17 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: FontSizes.lg,
-    fontWeight: '700',
+    fontFamily: Fonts.heading,
+    fontWeight: '400',
     color: Colors.text,
+    letterSpacing: -0.3,
   },
   headerSubtitle: {
-    fontSize: FontSizes.sm,
+    fontSize: 10,
+    fontFamily: Fonts.mono,
     color: Colors.textMuted,
+    letterSpacing: 1.5,
+    marginTop: 2,
   },
   timerBadge: {
     flexDirection: 'row',
@@ -89,9 +94,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: BorderRadius.sm,
     gap: 4,
+    borderWidth: 1,
   },
   timerText: {
-    fontSize: FontSizes.md,
+    fontSize: FontSizes.sm,
+    fontFamily: Fonts.monoBold,
     fontWeight: '700',
   },
   progressContainer: {
@@ -106,33 +113,35 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   positionBar: {
-    height: 3,
+    height: 2,
     backgroundColor: Colors.cardBorder,
-    borderRadius: 2,
+    borderRadius: 1,
     overflow: 'hidden',
   },
   positionFill: {
     height: '100%',
     backgroundColor: Colors.textMuted,
-    borderRadius: 2,
+    borderRadius: 1,
   },
   progressBar: {
-    height: 6,
+    height: 3,
     backgroundColor: Colors.cardBorder,
-    borderRadius: 3,
+    borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     backgroundColor: Colors.primary,
-    borderRadius: 3,
+    borderRadius: 2,
   },
   progressText: {
-    fontSize: FontSizes.sm,
-    fontWeight: '600',
+    fontSize: FontSizes.xs,
+    fontFamily: Fonts.mono,
+    fontWeight: '400',
     color: Colors.textLight,
     minWidth: 35,
     textAlign: 'right',
+    letterSpacing: 0.5,
   },
 });
 

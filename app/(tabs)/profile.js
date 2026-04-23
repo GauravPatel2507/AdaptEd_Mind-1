@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { Colors, Fonts, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
 import { FadeInDown } from '../../components/Animations';
+import { SectionDivider } from '../../components/EditorialComponents';
 import { db } from '../../config/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 
@@ -258,6 +259,8 @@ export default function ProfileScreen() {
           </FadeInDown>
         )}
 
+        <SectionDivider label="Reports" />
+
         {/* Reports - Module 8 */}
         <FadeInDown delay={200}>
           <Text style={styles.sectionTitle}>📊 Reports</Text>
@@ -286,6 +289,8 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </TouchableOpacity>
         </FadeInDown>
+
+        <SectionDivider label="Settings" />
 
         {/* Settings */}
         <FadeInDown delay={300}>

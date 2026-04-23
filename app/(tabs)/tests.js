@@ -15,6 +15,7 @@ import { router } from 'expo-router';
 import { Colors, Fonts, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
 import { SUBJECTS } from '../../constants/Config';
 import { FadeInDown, FadeInUp, ZoomIn } from '../../components/Animations';
+import { SectionDivider } from '../../components/EditorialComponents';
 import { generateAITest } from '../../services/aiService';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../config/firebase';
@@ -211,6 +212,8 @@ export default function TestsScreen() {
           </View>
         </FadeInDown>
 
+        <SectionDivider label="Subjects" />
+
         {/* Create New Test - Module 5 */}
         <FadeInDown delay={200}>
           <View style={styles.sectionHeader}>
@@ -247,6 +250,8 @@ export default function TestsScreen() {
             ))}
           </View>
         </FadeInDown>
+
+        <SectionDivider label="History" />
 
         {/* Test History */}
         <FadeInDown delay={400}>

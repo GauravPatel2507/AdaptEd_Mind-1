@@ -15,6 +15,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Colors, Fonts, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
 import { SUBJECTS } from '../../constants/Config';
 import { FadeInDown, FadeInRight } from '../../components/Animations';
+import { SectionDivider } from '../../components/EditorialComponents';
 import { db } from '../../config/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -310,6 +311,8 @@ export default function DashboardScreen() {
           </View>
         </FadeInDown>
 
+        <SectionDivider />
+
         {/* Quick Actions */}
         <FadeInDown delay={200}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -329,6 +332,8 @@ export default function DashboardScreen() {
             ))}
           </View>
         </FadeInDown>
+
+        <SectionDivider label="Learning" />
 
         {/* Continue Learning */}
         <FadeInDown delay={300}>

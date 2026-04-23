@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors, Fonts, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
 import { FadeInDown, FadeInUp } from '../../components/Animations';
+import { SectionDivider } from '../../components/EditorialComponents';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../config/firebase';
 import {
@@ -216,6 +217,8 @@ export default function BuddiesScreen() {
                 <Text style={styles.title}>Study Buddies</Text>
                 <Text style={styles.subtitle}>Connect and learn together</Text>
             </View>
+
+            <SectionDivider />
 
             {/* Tab Switcher */}
             <View style={styles.tabContainer}>
