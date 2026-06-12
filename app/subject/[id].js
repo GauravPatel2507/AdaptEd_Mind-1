@@ -208,7 +208,10 @@ const SUBJECT_QUIZZES = {
 
 const getSubjectIcon = (subjectId) => {
   const subject = SUBJECTS.find(s => s.id === subjectId);
-  return subject?.icon ? `${subject.icon}-outline` : 'school-outline';
+  if (!subject?.icon) return 'school-outline';
+  // Logo icons in Ionicons don't have outline variants
+  if (subject.icon.startsWith('logo-')) return subject.icon;
+  return `${subject.icon}-outline`;
 };
 
 const getDifficultyColor = (difficulty) => {

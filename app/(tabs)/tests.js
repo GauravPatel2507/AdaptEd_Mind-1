@@ -132,7 +132,7 @@ export default function TestsScreen() {
               subjectResults.reduce((sum, r) => sum + (r.score || 0), 0) / subjectResults.length
             );
           }
-          console.log(`Adaptive difficulty: ${selectedSubject.name} avg score = ${userAvgScore ?? 'no history'}`);
+          if (__DEV__) console.log(`Adaptive difficulty: ${selectedSubject.name} avg score = ${userAvgScore ?? 'no history'}`);
         } catch (e) {
           console.log('Could not fetch progress for adaptive difficulty:', e.message);
         }

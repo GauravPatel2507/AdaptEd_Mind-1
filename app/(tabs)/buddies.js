@@ -58,7 +58,9 @@ export default function BuddiesScreen() {
 
             setUsers(usersList);
         } catch (error) {
-            console.log('Error fetching users:', error.message);
+            if (__DEV__ && !error.message?.includes('permissions')) {
+                console.log('Error fetching users:', error.message);
+            }
         }
     }, [user]);
 
@@ -104,7 +106,9 @@ export default function BuddiesScreen() {
             setConversations(convList);
             setLoading(false);
         }, (error) => {
-            console.log('Conversation listener error:', error.message);
+            if (__DEV__ && !error.message?.includes('permissions')) {
+                console.log('Conversation listener error:', error.message);
+            }
             setLoading(false);
         });
 

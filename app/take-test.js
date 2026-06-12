@@ -336,7 +336,7 @@ export default function TakeTestScreen() {
                     averageScore: percentage
                 });
 
-                console.log('Quiz results saved successfully!');
+                if (__DEV__) console.log('Quiz results saved successfully!');
             } catch (error) {
                 console.error('Error saving quiz results:', error);
             }

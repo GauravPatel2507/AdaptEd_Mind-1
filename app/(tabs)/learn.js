@@ -23,8 +23,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
-// Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+// Enable LayoutAnimation on Android (old architecture only — no-op on New Architecture)
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental && !global.__turboModuleProxy) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
@@ -798,7 +798,9 @@ export default function LearnScreen() {
       try {
         await addDoc(collection(db, 'learningActivity'), activity);
       } catch (e) {
-        console.log('Error saving activity to Firebase:', e);
+        if (__DEV__ && !e.message?.includes('permissions')) {
+          console.log('Error saving activity to Firebase:', e);
+        }
       }
     }
   }, [user]);
