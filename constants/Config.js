@@ -4,7 +4,7 @@
 export const AI_CONFIG = {
   // Backend API base URL — all AI requests are proxied through the backend
   BACKEND_API_URL: __DEV__
-    ? 'http://localhost:3001'
+    ? 'http://10.173.176.104:3001'
     : 'https://your-production-backend.com', // TODO: Set production URL
 };
 

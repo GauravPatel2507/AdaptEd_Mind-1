@@ -10,10 +10,11 @@ const config = {
     databaseURL: process.env.FIREBASE_DATABASE_URL,
   },
 
-  gemini: {
-    apiKey: process.env.GEMINI_API_KEY,
-    apiUrl: process.env.GEMINI_API_URL ||
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+  groq: {
+    apiKey: process.env.GROQ_API_KEY,
+    apiUrl: process.env.GROQ_API_URL ||
+      'https://api.groq.com/openai/v1/chat/completions',
+    model: process.env.GROQ_MODEL || 'llama-3.1-8b-instant',
   },
 
   rateLimit: {
@@ -34,9 +35,8 @@ const config = {
 };
 
 // Validate required config
-if (!config.gemini.apiKey) {
-  console.error('FATAL: GEMINI_API_KEY is not set in .env');
-  process.exit(1);
+if (!config.groq.apiKey) {
+  console.warn('WARNING: GROQ_API_KEY is not set in .env — AI test generation will use fallback questions');
 }
 
 module.exports = config;

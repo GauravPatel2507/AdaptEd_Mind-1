@@ -1,4 +1,4 @@
-// AI Service — Server-side Gemini API integration with prompt engineering
+// AI Service — Server-side Groq API integration with prompt engineering
 const config = require('../config');
 const logger = require('../utils/logger');
 
@@ -34,11 +34,9 @@ const sanitizeSubject = (subject) => {
 };
 
 /**
- * Build the Gemini prompt using structured prompt engineering.
- * - System instructions constrain output format
- * - User input is sanitized
+ * Build the Groq chat messages for quiz generation.
  */
-const buildQuizPrompt = (subject, numberOfQuestions, difficulty) => {
+const buildQuizMessages = (subject, numberOfQuestions, difficulty) => {
   const difficultyDescription = {
     easy: 'basic and straightforward, suitable for beginners',
     medium: 'moderate complexity, requiring good understanding',
@@ -48,10 +46,21 @@ const buildQuizPrompt = (subject, numberOfQuestions, difficulty) => {
 
   const safeSubject = sanitizeSubject(subject);
 
-  return {
-    contents: [{
-      parts: [{
-        text: `Generate exactly ${numberOfQuestions} multiple choice questions for a ${safeSubject} test.
+  return [
+    {
+      role: 'system',
+      content: `You are an educational quiz generator for a CS/MCA learning platform.
+RULES:
+1. Return ONLY a valid JSON array, no markdown, no extra text, no code fences
+2. Each element must have: id (number), question (string), options (array of 4 strings), correct (0-3), explanation (string)
+3. The correct answer index MUST be randomly distributed across 0-3
+4. Questions must be factually accurate
+5. Never include offensive or inappropriate content
+6. Return exactly ${numberOfQuestions} questions`
+    },
+    {
+      role: 'user',
+      content: `Generate exactly ${numberOfQuestions} multiple choice questions for a ${safeSubject} test.
 Difficulty level: ${difficultyDescription[difficulty] || difficultyDescription.medium}
 
 Requirements:
@@ -61,31 +70,15 @@ Requirements:
 - Questions should test knowledge of ${safeSubject}
 - Make questions educational and appropriate for students aged 16+
 - Vary the topics within ${safeSubject}
-- Include practical application questions where applicable`
-      }]
-    }],
-    systemInstruction: {
-      parts: [{
-        text: `You are an educational quiz generator for a CS/MCA learning platform.
-RULES:
-1. Return ONLY a valid JSON array, no markdown, no extra text
-2. Each element must have: id (number), question (string), options (array of 4 strings), correct (0-3), explanation (string)
-3. The correct answer index MUST be randomly distributed across 0-3
-4. Questions must be factually accurate
-5. Never include offensive or inappropriate content`
-      }]
-    },
-    generationConfig: {
-      temperature: 0.7,
-      topK: 40,
-      topP: 0.95,
-      maxOutputTokens: 8192,
+- Include practical application questions where applicable
+
+Return ONLY the JSON array, no other text.`
     }
-  };
+  ];
 };
 
 /**
- * Validate the parsed quiz response from Gemini.
+ * Validate the parsed quiz response.
  * Returns { valid: true, questions: [...] } or { valid: false, error: '...' }
  */
 const validateQuizResponse = (data, expectedCount) => {
@@ -125,7 +118,7 @@ const validateQuizResponse = (data, expectedCount) => {
 };
 
 /**
- * Call the Gemini API to generate quiz questions.
+ * Call the Groq API to generate quiz questions.
  * Includes retry logic with exponential backoff.
  */
 const generateAITest = async (subject, {
@@ -138,43 +131,57 @@ const generateAITest = async (subject, {
   const startTime = Date.now();
   logger.info('AI', 'AI request received', { subject, numberOfQuestions, difficulty });
 
+  // If no API key configured, go straight to fallback
+  if (!config.groq.apiKey) {
+    logger.warn('AI', 'No GROQ_API_KEY configured, using fallback questions');
+    return generateFallbackTest(subject, numberOfQuestions, difficulty, timeLimit);
+  }
+
   // Compute effective difficulty from user score if adaptive
   const effectiveDifficulty = difficulty === 'adaptive'
     ? computeAdaptiveDifficulty(userAvgScore)
     : difficulty;
 
-  const promptPayload = buildQuizPrompt(subject, numberOfQuestions, effectiveDifficulty);
+  const messages = buildQuizMessages(subject, numberOfQuestions, effectiveDifficulty);
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      logger.debug('AI', `Gemini API call attempt ${attempt + 1}/${maxRetries + 1}`);
-      const response = await fetch(
-        `${config.gemini.apiUrl}?key=${config.gemini.apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(promptPayload),
-        }
-      );
+      logger.debug('AI', `Groq API call attempt ${attempt + 1}/${maxRetries + 1}`);
+
+      const response = await fetch(config.groq.apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${config.groq.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: config.groq.model,
+          messages,
+          temperature: 0.7,
+          max_tokens: 8192,
+          response_format: { type: 'json_object' },
+        }),
+      });
 
       if (!response.ok) {
         if (response.status === 429) {
-          logger.warn('AI', `Gemini rate limited (attempt ${attempt + 1}/${maxRetries + 1})`);
+          logger.warn('AI', `Groq rate limited (attempt ${attempt + 1}/${maxRetries + 1})`);
           if (attempt < maxRetries) {
-            await sleep(1000 * (attempt + 1)); // exponential backoff
+            await sleep(1000 * (attempt + 1));
             continue;
           }
           logger.warn('AI', 'All retries exhausted due to rate limiting, using fallback');
           return generateFallbackTest(subject, numberOfQuestions, effectiveDifficulty, timeLimit);
         }
-        throw new Error(`Gemini API error: ${response.status}`);
+        const errBody = await response.text();
+        throw new Error(`Groq API error: ${response.status} - ${errBody}`);
       }
 
       const data = await response.json();
-      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const generatedText = data.choices?.[0]?.message?.content;
 
       if (!generatedText) {
-        throw new Error('No response text from Gemini');
+        throw new Error('No response content from Groq');
       }
 
       // Parse JSON from response (handle markdown code blocks)
@@ -184,7 +191,13 @@ const generateAITest = async (subject, {
       if (cleanedText.endsWith('```')) cleanedText = cleanedText.slice(0, -3);
       cleanedText = cleanedText.trim();
 
-      const parsed = JSON.parse(cleanedText);
+      let parsed = JSON.parse(cleanedText);
+
+      // Groq with response_format: json_object may wrap in an object
+      // e.g. { "questions": [...] }
+      if (!Array.isArray(parsed) && parsed.questions && Array.isArray(parsed.questions)) {
+        parsed = parsed.questions;
+      }
 
       // Validate
       const validation = validateQuizResponse(parsed, numberOfQuestions);

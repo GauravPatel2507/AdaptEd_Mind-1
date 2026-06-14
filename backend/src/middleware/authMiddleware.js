@@ -29,6 +29,22 @@ const authMiddleware = async (req, res, next) => {
     };
     next();
   } catch (error) {
+    // In development, fall back to decoding the JWT payload without verification
+    // This allows the backend to work without Firebase Admin credentials
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        const payload = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString());
+        req.user = {
+          uid: payload.user_id || payload.sub,
+          email: payload.email || null,
+          name: payload.name || null,
+        };
+        logger.warn('AUTH', 'Using unverified token in dev mode — set GOOGLE_APPLICATION_CREDENTIALS for production');
+        return next();
+      } catch (decodeError) {
+        // Token is completely invalid
+      }
+    }
     logger.authFailure(error.message, req.ip);
     return res.status(401).json({
       success: false,

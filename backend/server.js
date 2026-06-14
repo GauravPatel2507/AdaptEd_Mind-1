@@ -20,9 +20,9 @@ const app = express();
 // Helmet adds security-related HTTP headers
 app.use(helmet());
 
-// CORS — restricted to allowed origins
+// CORS — permissive in dev (Expo Go on physical devices), restricted in production
 app.use(cors({
-  origin: config.cors.allowedOrigins,
+  origin: config.nodeEnv === 'development' ? true : config.cors.allowedOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
