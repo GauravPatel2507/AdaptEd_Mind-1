@@ -12,9 +12,10 @@ import {
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
-import { Colors, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
+import { Colors, Fonts, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
 import { SUBJECTS } from '../../constants/Config';
 import { FadeInDown, FadeInRight } from '../../components/Animations';
+import { SectionDivider } from '../../components/EditorialComponents';
 import { db } from '../../config/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -310,6 +311,8 @@ export default function DashboardScreen() {
           </View>
         </FadeInDown>
 
+        <SectionDivider />
+
         {/* Quick Actions */}
         <FadeInDown delay={200}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -329,6 +332,8 @@ export default function DashboardScreen() {
             ))}
           </View>
         </FadeInDown>
+
+        <SectionDivider label="Learning" />
 
         {/* Continue Learning */}
         <FadeInDown delay={300}>
@@ -514,7 +519,7 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: 'rgba(99, 102, 241, 0.08)',
+    backgroundColor: 'rgba(61, 112, 104, 0.06)',
     top: -60,
     right: -60,
   },
@@ -523,7 +528,7 @@ const styles = StyleSheet.create({
     width: 150,
     height: 150,
     borderRadius: 75,
-    backgroundColor: 'rgba(16, 185, 129, 0.06)',
+    backgroundColor: 'rgba(74, 140, 126, 0.05)',
     top: 80,
     left: -40,
   },
@@ -539,14 +544,19 @@ const styles = StyleSheet.create({
   },
   headerLeft: {},
   greeting: {
-    fontSize: FontSizes.md,
-    color: Colors.textLight,
+    fontSize: FontSizes.sm,
+    fontFamily: Fonts.mono,
+    color: Colors.textMuted,
     marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
   userName: {
     fontSize: FontSizes.xxl,
-    fontWeight: '700',
+    fontFamily: Fonts.heading,
+    fontWeight: '300',
     color: Colors.text,
+    letterSpacing: -0.5,
   },
   notificationButton: {
     width: 48,
@@ -592,38 +602,49 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: FontSizes.xxl,
+    fontFamily: Fonts.monoBold,
     fontWeight: '700',
     color: '#fff',
   },
   statLabel: {
-    fontSize: FontSizes.sm,
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: FontSizes.xs,
+    fontFamily: Fonts.mono,
+    color: 'rgba(255,255,255,0.7)',
     marginTop: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
   },
   statDivider: {
     width: 1,
     height: 40,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
   },
   statsButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: BorderRadius.md,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: BorderRadius.sm,
     paddingVertical: Spacing.sm,
     gap: Spacing.xs,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   statsButtonText: {
-    fontSize: FontSizes.md,
-    fontWeight: '600',
+    fontSize: FontSizes.sm,
+    fontFamily: Fonts.mono,
+    fontWeight: '400',
     color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
   sectionTitle: {
     fontSize: FontSizes.lg,
-    fontWeight: '600',
+    fontFamily: Fonts.heading,
+    fontWeight: '300',
     color: Colors.text,
     marginBottom: Spacing.md,
+    letterSpacing: -0.3,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -632,9 +653,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   seeAllText: {
-    fontSize: FontSizes.sm,
+    fontSize: FontSizes.xs,
+    fontFamily: Fonts.mono,
     color: Colors.primary,
-    fontWeight: '500',
+    fontWeight: '400',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
   },
   quickActionsGrid: {
     flexDirection: 'row',
@@ -645,10 +669,11 @@ const styles = StyleSheet.create({
   quickActionCard: {
     width: (width - Spacing.lg * 2 - Spacing.sm * 3) / 4,
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.md,
     padding: Spacing.md,
     alignItems: 'center',
-    ...Shadows.sm,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
   },
   quickActionIcon: {
     width: 48,
@@ -659,10 +684,13 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   quickActionTitle: {
-    fontSize: FontSizes.xs,
+    fontSize: 10,
+    fontFamily: Fonts.mono,
     color: Colors.text,
-    fontWeight: '500',
+    fontWeight: '400',
     textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   subjectsScroll: {
     marginHorizontal: -Spacing.lg,
@@ -672,10 +700,11 @@ const styles = StyleSheet.create({
   subjectCard: {
     width: 140,
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.md,
     padding: Spacing.md,
     marginRight: Spacing.sm,
-    ...Shadows.sm,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
   },
   subjectIcon: {
     width: 56,
@@ -686,34 +715,38 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   subjectName: {
-    fontSize: FontSizes.md,
-    fontWeight: '600',
+    fontSize: FontSizes.sm,
+    fontFamily: Fonts.bodyMedium,
+    fontWeight: '500',
     color: Colors.text,
     marginBottom: Spacing.sm,
   },
   progressBar: {
-    height: 4,
+    height: 3,
     backgroundColor: Colors.cardBorder,
-    borderRadius: 2,
+    borderRadius: 0,
     overflow: 'hidden',
     marginBottom: Spacing.xs,
   },
   progressFill: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: 0,
   },
   progressText: {
     fontSize: FontSizes.xs,
-    color: Colors.textLight,
+    fontFamily: Fonts.mono,
+    color: Colors.textMuted,
+    letterSpacing: 0.5,
   },
   activityCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.md,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
-    ...Shadows.sm,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
   },
   activityIcon: {
     width: 48,
@@ -728,13 +761,16 @@ const styles = StyleSheet.create({
   },
   activityTitle: {
     fontSize: FontSizes.md,
-    fontWeight: '600',
+    fontFamily: Fonts.bodyMedium,
+    fontWeight: '500',
     color: Colors.text,
     marginBottom: 4,
   },
   activityMeta: {
     fontSize: FontSizes.sm,
-    color: Colors.textLight,
+    fontFamily: Fonts.mono,
+    color: Colors.textMuted,
+    letterSpacing: 0.3,
   },
   // Notifications Modal Styles
   modalOverlay: {
@@ -759,8 +795,10 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: FontSizes.xl,
-    fontWeight: '700',
+    fontFamily: Fonts.heading,
+    fontWeight: '300',
     color: Colors.text,
+    letterSpacing: -0.3,
   },
   modalHeaderRight: {
     flexDirection: 'row',
@@ -772,9 +810,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
   },
   markAllText: {
-    fontSize: FontSizes.sm,
+    fontSize: FontSizes.xs,
+    fontFamily: Fonts.mono,
     color: Colors.primary,
-    fontWeight: '500',
+    fontWeight: '400',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   closeButton: {
     width: 40,
@@ -797,8 +838,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   notificationUnread: {
-    backgroundColor: 'rgba(99, 102, 241, 0.05)',
-    borderLeftWidth: 3,
+    backgroundColor: Colors.primary + '08',
+    borderLeftWidth: 2,
     borderLeftColor: Colors.primary,
   },
   notificationIcon: {
@@ -819,7 +860,8 @@ const styles = StyleSheet.create({
   },
   notificationTitle: {
     fontSize: FontSizes.md,
-    fontWeight: '600',
+    fontFamily: Fonts.bodyMedium,
+    fontWeight: '500',
     color: Colors.text,
   },
   unreadDot: {
@@ -830,13 +872,16 @@ const styles = StyleSheet.create({
   },
   notificationMessage: {
     fontSize: FontSizes.sm,
+    fontFamily: Fonts.body,
     color: Colors.textLight,
     marginTop: 2,
     marginBottom: 4,
   },
   notificationTime: {
     fontSize: FontSizes.xs,
+    fontFamily: Fonts.mono,
     color: Colors.textMuted,
+    letterSpacing: 0.5,
   },
   emptyActivity: {
     alignItems: 'center',
@@ -881,19 +926,22 @@ const styles = StyleSheet.create({
   },
   continueActivityLabel: {
     fontSize: FontSizes.xs,
+    fontFamily: Fonts.mono,
     color: Colors.primary,
-    fontWeight: '600',
+    fontWeight: '400',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 2,
   },
   continueActivityTitle: {
     fontSize: FontSizes.md,
-    fontWeight: '600',
+    fontFamily: Fonts.bodyMedium,
+    fontWeight: '500',
     color: Colors.text,
     marginTop: 2,
   },
   continueActivitySubject: {
     fontSize: FontSizes.sm,
+    fontFamily: Fonts.body,
     color: Colors.textLight,
     marginTop: 1,
   },

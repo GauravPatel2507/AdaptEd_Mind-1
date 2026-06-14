@@ -12,12 +12,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import { LineChart, BarChart } from 'react-native-chart-kit';
-import { Colors, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
+import { Colors, Fonts, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
 import { SUBJECTS, PERFORMANCE_THRESHOLDS } from '../../constants/Config';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../config/firebase';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { router } from 'expo-router';
+import { SectionDivider } from '../../components/EditorialComponents';
 
 const { width } = Dimensions.get('window');
 
@@ -488,6 +489,8 @@ export default function ProgressScreen() {
           </View>
         )}
 
+        <SectionDivider label="Insights" />
+
         {/* AI Study Recommendation */}
         {aiRecommendation && stats.totalTests > 0 && (
           <TouchableOpacity
@@ -529,7 +532,7 @@ export default function ProgressScreen() {
                 backgroundGradientFrom: Colors.surface,
                 backgroundGradientTo: Colors.surface,
                 decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
+                color: (opacity = 1) => `rgba(61, 112, 104, ${opacity})`,
                 labelColor: (opacity = 1) => Colors.textLight,
                 style: { borderRadius: 16 },
                 propsForDots: {
@@ -672,7 +675,7 @@ export default function ProgressScreen() {
                   backgroundGradientFrom: Colors.surface,
                   backgroundGradientTo: Colors.surface,
                   decimalPlaces: 0,
-                  color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
+                  color: (opacity = 1) => `rgba(61, 112, 104, ${opacity})`,
                   labelColor: () => Colors.textLight,
                   barPercentage: 0.6,
                   propsForLabels: { fontSize: 10 },
@@ -792,11 +795,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: FontSizes.xxl,
-    fontWeight: '700',
+    fontFamily: Fonts.heading,
+    fontWeight: '300',
     color: Colors.text,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: FontSizes.md,
+    fontSize: FontSizes.sm,
+    fontFamily: Fonts.body,
     color: Colors.textLight,
     marginTop: 4,
   },
@@ -815,8 +821,10 @@ const styles = StyleSheet.create({
   },
   overallTitle: {
     fontSize: FontSizes.lg,
-    fontWeight: '600',
+    fontFamily: Fonts.heading,
+    fontWeight: '300',
     color: Colors.text,
+    letterSpacing: -0.3,
   },
   periodSelector: {
     flexDirection: 'row',
@@ -834,8 +842,11 @@ const styles = StyleSheet.create({
   },
   periodText: {
     fontSize: FontSizes.xs,
+    fontFamily: Fonts.mono,
     color: Colors.textLight,
-    fontWeight: '500',
+    fontWeight: '400',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   periodTextActive: {
     color: Colors.textOnPrimary,
@@ -847,12 +858,16 @@ const styles = StyleSheet.create({
   },
   ringValue: {
     fontSize: FontSizes.xxl,
+    fontFamily: Fonts.monoBold,
     fontWeight: '700',
     color: Colors.primary,
   },
   ringLabel: {
-    fontSize: FontSizes.sm,
+    fontSize: FontSizes.xs,
+    fontFamily: Fonts.mono,
     color: Colors.textLight,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   statsGrid: {
     flex: 1,
@@ -866,12 +881,16 @@ const styles = StyleSheet.create({
   },
   statBoxValue: {
     fontSize: FontSizes.lg,
+    fontFamily: Fonts.monoBold,
     fontWeight: '600',
     color: Colors.text,
   },
   statBoxLabel: {
-    fontSize: FontSizes.sm,
+    fontSize: FontSizes.xs,
+    fontFamily: Fonts.mono,
     color: Colors.textLight,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   // Badges
   badgesRow: {
@@ -890,7 +909,10 @@ const styles = StyleSheet.create({
   },
   badgeLabel: {
     fontSize: FontSizes.xs,
-    fontWeight: '600',
+    fontFamily: Fonts.mono,
+    fontWeight: '400',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   // AI Recommendation
   aiRecCard: {
@@ -918,10 +940,11 @@ const styles = StyleSheet.create({
   },
   aiRecLabel: {
     fontSize: FontSizes.xs,
-    fontWeight: '600',
+    fontFamily: Fonts.mono,
+    fontWeight: '400',
     color: Colors.accent,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 2,
   },
   aiRecMessage: {
     fontSize: FontSizes.sm,
@@ -963,9 +986,11 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: FontSizes.lg,
-    fontWeight: '600',
+    fontFamily: Fonts.heading,
+    fontWeight: '300',
     color: Colors.text,
     marginBottom: Spacing.sm,
+    letterSpacing: -0.3,
   },
   sectionSubtitle: {
     fontSize: FontSizes.sm,
@@ -999,9 +1024,10 @@ const styles = StyleSheet.create({
   },
   gapSubject: {
     fontSize: FontSizes.xs,
-    color: Colors.textLight,
+    fontFamily: Fonts.mono,
+    color: Colors.textMuted,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1.5,
   },
   gapTopic: {
     fontSize: FontSizes.md,
@@ -1107,9 +1133,12 @@ const styles = StyleSheet.create({
     ...Shadows.md,
   },
   emptyCTAText: {
-    fontSize: FontSizes.md,
-    fontWeight: '600',
+    fontSize: FontSizes.sm,
+    fontFamily: Fonts.mono,
+    fontWeight: '400',
     color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
   emptyChart: {
     height: 180,

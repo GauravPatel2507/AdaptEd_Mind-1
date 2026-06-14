@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, router } from 'expo-router';
-import { Colors, Spacing, BorderRadius, FontSizes, Shadows } from '../constants/Colors';
+import { Colors, Fonts, Spacing, BorderRadius, FontSizes, Shadows } from '../constants/Colors';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../config/firebase';
 import {
@@ -332,14 +332,18 @@ const styles = StyleSheet.create({
     headerInfo: {
         flex: 1,
     },
-    headerName: {
+    headerTitle: {
         fontSize: FontSizes.lg,
-        fontWeight: '600',
+        fontFamily: Fonts.heading,
+        fontWeight: '300',
         color: Colors.text,
+        letterSpacing: -0.3,
     },
-    headerStatus: {
-        fontSize: FontSizes.sm,
+    headerSubtitle: {
+        fontSize: FontSizes.xs,
+        fontFamily: Fonts.mono,
         color: Colors.textMuted,
+        letterSpacing: 0.5,
     },
     headerAction: {
         padding: Spacing.xs,
@@ -374,6 +378,14 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#fff',
     },
+    sendButtonText: {
+        fontFamily: Fonts.mono,
+        fontWeight: '400',
+        color: '#fff',
+        fontSize: FontSizes.sm,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
     avatarPlaceholder: {
         width: 28,
         marginRight: Spacing.xs,
@@ -395,16 +407,19 @@ const styles = StyleSheet.create({
     },
     messageText: {
         fontSize: FontSizes.md,
-        color: Colors.text,
+        fontFamily: Fonts.body,
         lineHeight: 22,
+        color: Colors.text,
     },
     messageTextOwn: {
         color: '#fff',
     },
     messageTime: {
         fontSize: 10,
-        color: Colors.textMuted,
+        fontFamily: Fonts.mono,
         marginTop: 4,
+        letterSpacing: 0.5,
+        color: Colors.textMuted,
         alignSelf: 'flex-end',
     },
     messageTimeOwn: {
@@ -444,6 +459,13 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: Colors.text,
         textAlign: 'center',
+    },
+    systemMessageText: {
+        fontSize: FontSizes.sm,
+        fontFamily: Fonts.body,
+        color: Colors.textMuted,
+        textAlign: 'center',
+        fontStyle: 'italic',
     },
     emptyChatSubtitle: {
         fontSize: FontSizes.md,

@@ -1,77 +1,93 @@
-// AdaptEd Mind - Color Palette
-// Student-friendly, pleasant, and eye-friendly colors
+// AdaptEd Mind - Editorial Tech Design System
+// Organic, muted palette with editorial typography
 
 export const Colors = {
-  // Primary colors - Indigo (calming, focused)
-  primary: '#6366F1',
-  primaryLight: '#A5B4FC',
-  primaryDark: '#4338CA',
+  // Primary colors - Teal (editorial accent)
+  primary: '#3d7068',
+  primaryLight: '#5a9e93',
+  primaryDark: '#2b5049',
 
-  // Secondary colors - Emerald (success, growth)
-  secondary: '#10B981',
-  secondaryLight: '#6EE7B7',
-  secondaryDark: '#047857',
+  // Secondary colors - Muted Emerald
+  secondary: '#4a8c7e',
+  secondaryLight: '#6eb0a2',
+  secondaryDark: '#2f6558',
 
-  // Accent colors - Amber (highlights, attention)
-  accent: '#F59E0B',
-  accentLight: '#FCD34D',
-  accentDark: '#D97706',
+  // Accent colors - Warm Amber (muted)
+  accent: '#c49a3c',
+  accentLight: '#d4b56a',
+  accentDark: '#9e7a2a',
 
-  // Background colors
-  background: '#F8FAFC',
-  backgroundDark: '#1E293B',
+  // Background colors — warm editorial
+  background: '#f7f6f2',
+  backgroundDark: '#1c1c1c',
   surface: '#FFFFFF',
-  surfaceDark: '#334155',
+  surfaceDark: '#2a2a28',
 
-  // Text colors
-  text: '#1E293B',
-  textLight: '#64748B',
-  textMuted: '#94A3B8',
+  // Text colors — editorial foreground
+  text: '#1c1c1c',
+  textLight: '#5a5a58',
+  textMuted: '#9c9b96',
   textOnPrimary: '#FFFFFF',
-  textDark: '#F1F5F9',
+  textDark: '#f0efeb',
 
-  // Status colors
-  success: '#10B981',
-  warning: '#F59E0B',
-  error: '#EF4444',
-  info: '#3B82F6',
+  // Status colors (slightly muted)
+  success: '#4a8c7e',
+  warning: '#c49a3c',
+  error: '#c45c4a',
+  info: '#4a7a9c',
 
-  // Card colors
+  // Card colors — editorial borders
   card: '#FFFFFF',
-  cardBorder: '#E2E8F0',
-  cardShadow: 'rgba(0, 0, 0, 0.05)',
+  cardBorder: '#e5e4de',
+  cardShadow: 'rgba(28, 28, 28, 0.04)',
 
   // Gradient presets
   gradients: {
-    primary: ['#6366F1', '#8B5CF6'],
-    secondary: ['#10B981', '#14B8A6'],
-    accent: ['#F59E0B', '#F97316'],
-    progress: ['#6366F1', '#10B981'],
-    warmth: ['#F59E0B', '#EF4444'],
-    cool: ['#3B82F6', '#6366F1'],
+    primary: ['#3d7068', '#4a8c7e'],
+    secondary: ['#4a8c7e', '#5a9e93'],
+    accent: ['#c49a3c', '#d4b56a'],
+    progress: ['#3d7068', '#4a8c7e'],
+    warmth: ['#c49a3c', '#c45c4a'],
+    cool: ['#4a7a9c', '#3d7068'],
   },
 
-  // Subject-specific colors (for visual differentiation)
+  // Subject-specific colors (muted editorial palette)
   subjects: {
-    c_programming: '#6366F1',
-    data_structures: '#10B981',
-    oop: '#F59E0B',
-    dbms: '#8B5CF6',
-    os: '#14B8A6',
-    networks: '#3B82F6',
-    software_eng: '#EF4444',
-    web_tech: '#F97316',
-    comp_org: '#22C55E',
-    discrete_math: '#EC4899',
-    algorithms: '#0EA5E9',
-    ai: '#A855F7',
-    ml: '#D946EF',
-    cloud: '#06B6D4',
-    cyber: '#DC2626',
-    mobile_dev: '#16A34A',
-    big_data: '#CA8A04',
-    data_science: '#7C3AED',
+    c_programming: '#3d7068',
+    data_structures: '#4a8c7e',
+    oop: '#c49a3c',
+    dbms: '#6b6ea0',
+    os: '#5a9e93',
+    networks: '#4a7a9c',
+    software_eng: '#c45c4a',
+    web_tech: '#b07040',
+    comp_org: '#5a8c6e',
+    discrete_math: '#9c6a8c',
+    algorithms: '#4a8ca0',
+    ai: '#7a6aa0',
+    ml: '#9c5aa0',
+    cloud: '#4a909c',
+    cyber: '#a04040',
+    mobile_dev: '#4a8c5a',
+    big_data: '#9c8a3c',
+    data_science: '#6a5aa0',
   },
+};
+
+// Font families — editorial trio
+export const Fonts = {
+  // Playfair Display — Serif for headings and emotional impact
+  heading: 'PlayfairDisplay_400Regular',
+  headingRegular: 'PlayfairDisplay_400Regular',
+  headingBold: 'PlayfairDisplay_700Bold',
+  // Space Grotesk — Sans for readability (body text)
+  body: 'SpaceGrotesk_400Regular',
+  bodyMedium: 'SpaceGrotesk_500Medium',
+  bodySemiBold: 'SpaceGrotesk_600SemiBold',
+  bodyBold: 'SpaceGrotesk_700Bold',
+  // Space Mono — Monospace for technical data, labels, and buttons
+  mono: 'SpaceMono_400Regular',
+  monoBold: 'SpaceMono_700Bold',
 };
 
 export const Spacing = {
@@ -84,10 +100,10 @@ export const Spacing = {
 };
 
 export const BorderRadius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 24,
+  sm: 4,
+  md: 8,
+  lg: 12,
+  xl: 16,
   full: 9999,
 };
 
@@ -111,25 +127,25 @@ export const FontWeights = {
 
 export const Shadows = {
   sm: {
-    shadowColor: '#000',
+    shadowColor: '#1c1c1c',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 2,
     elevation: 1,
   },
   md: {
-    shadowColor: '#000',
+    shadowColor: '#1c1c1c',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.06,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
   },
   lg: {
-    shadowColor: '#000',
+    shadowColor: '#1c1c1c',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: 4,
   },
 };
 

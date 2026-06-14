@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, router } from 'expo-router';
-import { Colors, Spacing, BorderRadius, FontSizes, Shadows } from '../constants/Colors';
+import { Colors, Fonts, Spacing, BorderRadius, FontSizes, Shadows } from '../constants/Colors';
 import { SUBJECTS } from '../constants/Config';
 import { generateAITest } from '../services/aiService';
 import { updateProgress } from '../services/progressService';
@@ -22,6 +22,8 @@ import { db } from '../config/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+// Extracted components (available for gradual adoption)
+import { TestResults } from '../components/test';
 
 const { width, height } = Dimensions.get('window');
 const AUTOSAVE_KEY = 'test_autosave_state';
@@ -294,10 +296,10 @@ export default function TakeTestScreen() {
                 correctCount++;
             }
             questionResults.push({
-                questionId: question.id,
+                questionId: question.id ?? null,
                 correct: isCorrect,
-                userAnswer: selectedAnswers[index],
-                correctAnswer: question.correct
+                userAnswer: selectedAnswers[index] !== undefined ? selectedAnswers[index] : null,
+                correctAnswer: question.correct !== undefined ? question.correct : null
             });
         });
 
@@ -317,14 +319,19 @@ export default function TakeTestScreen() {
             try {
                 await addDoc(collection(db, 'quizResults'), {
                     userId: user.uid,
-                    subject: subject,
-                    subjectId: subjectIdParam || (SUBJECTS.find(s => s.name === subject)?.id) || subject.toLowerCase().replace(/\s+/g, ''),
+                    subject: subject || 'Unknown',
+                    subjectId: subjectIdParam || (SUBJECTS.find(s => s.name === subject)?.id) || subject?.toLowerCase().replace(/\s+/g, '') || 'unknown',
                     score: percentage,
                     correctAnswers: correctCount,
                     totalQuestions: questions.length,
                     difficulty: difficulty || 'adaptive',
-                    timeSpent: totalTimeRef.current - timeRemaining,
-                    questionResults: questionResults,
+                    timeSpent: (totalTimeRef.current - timeRemaining) || 0,
+                    questionResults: questionResults.map(qr => ({
+                        questionId: qr.questionId ?? null,
+                        correct: qr.correct ?? false,
+                        userAnswer: qr.userAnswer ?? null,
+                        correctAnswer: qr.correctAnswer ?? null,
+                    })),
                     createdAt: new Date().toISOString()
                 });
 
@@ -479,180 +486,20 @@ export default function TakeTestScreen() {
         );
     }
 
-    // Results screen
+    // Results screen — using extracted TestResults component
     if (showResults) {
-        const percentage = Math.round((score / questions.length) * 100);
-        const getGradeInfo = () => {
-            if (percentage >= 90) return { grade: 'A+', color: '#10B981', message: 'Excellent! Outstanding performance!' };
-            if (percentage >= 80) return { grade: 'A', color: '#22C55E', message: 'Great job! Very well done!' };
-            if (percentage >= 70) return { grade: 'B', color: '#6366F1', message: 'Good work! Keep it up!' };
-            if (percentage >= 60) return { grade: 'C', color: '#F59E0B', message: 'Not bad! Room for improvement.' };
-            if (percentage >= 50) return { grade: 'D', color: '#F97316', message: 'Keep practicing!' };
-            return { grade: 'F', color: '#EF4444', message: 'You need more practice.' };
-        };
-
-        const gradeInfo = getGradeInfo();
-
         return (
-            <ScrollView style={styles.container} contentContainerStyle={styles.resultsContent}>
-                <View style={styles.resultsHeader}>
-                    <Text style={styles.resultsTitle}>Test Complete! 🎉</Text>
-                    <Text style={styles.resultsSubject}>{subject}</Text>
-                </View>
-
-                <View style={[styles.gradeCard, { borderColor: gradeInfo.color }]}>
-                    <Text style={[styles.gradeText, { color: gradeInfo.color }]}>{gradeInfo.grade}</Text>
-                    <Text style={styles.percentageText}>{percentage}%</Text>
-                    <Text style={styles.scoreText}>{score} / {questions.length} correct</Text>
-                    <Text style={styles.gradeMessage}>{gradeInfo.message}</Text>
-                    {savingResults && (
-                        <View style={styles.savingBadge}>
-                            <ActivityIndicator size="small" color={Colors.primary} />
-                            <Text style={styles.savingText}>Saving progress...</Text>
-                        </View>
-                    )}
-                </View>
-
-                {/* AI Insight Card - Enhanced with tips */}
-                {aiInsight && (
-                    <View style={styles.aiInsightCard}>
-                        <View style={styles.aiInsightHeader}>
-                            <Ionicons name="sparkles" size={20} color={Colors.accent} />
-                            <Text style={styles.aiInsightLabel}>AI Learning Insight</Text>
-                        </View>
-                        <Text style={styles.aiInsightTitle}>{aiInsight.title}</Text>
-                        <Text style={styles.aiInsightMessage}>{aiInsight.message}</Text>
-                        {aiInsight.tips && aiInsight.tips.length > 0 && (
-                            <View style={styles.tipsContainer}>
-                                {aiInsight.tips.map((tip, i) => (
-                                    <View key={i} style={styles.tipRow}>
-                                        <Ionicons name="checkmark-circle-outline" size={16} color={Colors.secondary} />
-                                        <Text style={styles.tipText}>{tip}</Text>
-                                    </View>
-                                ))}
-                            </View>
-                        )}
-                        <View style={styles.aiRecommendation}>
-                            <Ionicons name="arrow-forward-circle" size={18} color={Colors.primary} />
-                            <Text style={styles.aiRecommendationText}>
-                                Recommended: {aiInsight.recommendation}
-                            </Text>
-                        </View>
-                    </View>
-                )}
-
-                <Text style={styles.reviewTitle}>📋 Review Answers</Text>
-
-                {/* Collapsible review cards */}
-                {questions.map((question, index) => {
-                    const userAnswer = selectedAnswers[index];
-                    const isCorrect = userAnswer === question.correct;
-                    const wasAnswered = userAnswer !== undefined;
-                    const isExpanded = expandedReview === index;
-
-                    return (
-                        <TouchableOpacity
-                            key={index}
-                            style={styles.reviewCard}
-                            onPress={() => setExpandedReview(isExpanded ? null : index)}
-                            activeOpacity={0.7}
-                        >
-                            <View style={styles.reviewHeader}>
-                                <Text style={styles.reviewQuestionNumber}>Q{index + 1}</Text>
-                                <View style={styles.reviewHeaderRight}>
-                                    <View style={[
-                                        styles.reviewStatus,
-                                        { backgroundColor: isCorrect ? '#10B98120' : '#EF444420' }
-                                    ]}>
-                                        <Ionicons
-                                            name={isCorrect ? 'checkmark-circle' : 'close-circle'}
-                                            size={16}
-                                            color={isCorrect ? '#10B981' : '#EF4444'}
-                                        />
-                                        <Text style={[
-                                            styles.reviewStatusText,
-                                            { color: isCorrect ? '#10B981' : '#EF4444' }
-                                        ]}>
-                                            {isCorrect ? 'Correct' : wasAnswered ? 'Incorrect' : 'Skipped'}
-                                        </Text>
-                                    </View>
-                                    <Ionicons
-                                        name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                                        size={18}
-                                        color={Colors.textLight}
-                                    />
-                                </View>
-                            </View>
-
-                            {isExpanded && (
-                                <>
-                                    <Text style={styles.reviewQuestion}>{question.question}</Text>
-
-                                    <View style={styles.reviewOptions}>
-                                        {question.options.map((option, optIndex) => {
-                                            const isCorrectOption = optIndex === question.correct;
-                                            const isUserAnswer = optIndex === userAnswer;
-
-                                            return (
-                                                <View
-                                                    key={optIndex}
-                                                    style={[
-                                                        styles.reviewOption,
-                                                        isCorrectOption && styles.reviewOptionCorrect,
-                                                        isUserAnswer && !isCorrectOption && styles.reviewOptionWrong
-                                                    ]}
-                                                >
-                                                    <Text style={[
-                                                        styles.reviewOptionText,
-                                                        isCorrectOption && styles.reviewOptionTextCorrect,
-                                                        isUserAnswer && !isCorrectOption && styles.reviewOptionTextWrong
-                                                    ]}>
-                                                        {String.fromCharCode(65 + optIndex)}. {option}
-                                                    </Text>
-                                                    {isCorrectOption && (
-                                                        <Ionicons name="checkmark" size={18} color="#10B981" />
-                                                    )}
-                                                    {isUserAnswer && !isCorrectOption && (
-                                                        <Ionicons name="close" size={18} color="#EF4444" />
-                                                    )}
-                                                </View>
-                                            );
-                                        })}
-                                    </View>
-
-                                    {question.explanation && (
-                                        <View style={styles.explanationBox}>
-                                            <Ionicons name="bulb" size={16} color={Colors.accent} />
-                                            <Text style={styles.explanationText}>{question.explanation}</Text>
-                                        </View>
-                                    )}
-                                </>
-                            )}
-                        </TouchableOpacity>
-                    );
-                })}
-
-                {/* Retry action buttons */}
-                <View style={styles.resultActions}>
-                    <TouchableOpacity style={styles.retryButton} onPress={handleRetryTest}>
-                        <Ionicons name="refresh" size={20} color={Colors.primary} />
-                        <Text style={styles.retryButtonText}>Retry Test</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.practiceButton} onPress={handlePracticeIncorrect}>
-                        <Ionicons name="fitness" size={20} color={Colors.accent} />
-                        <Text style={styles.practiceButtonText}>Practice Incorrect</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity
-                    style={styles.finishButton}
-                    onPress={() => router.back()}
-                >
-                    <Text style={styles.finishButtonText}>Back to Tests</Text>
-                </TouchableOpacity>
-
-                <View style={{ height: 50 }} />
-            </ScrollView>
+            <TestResults
+                questions={questions}
+                selectedAnswers={selectedAnswers}
+                score={score}
+                subject={subject}
+                savingResults={savingResults}
+                aiInsight={aiInsight}
+                onRetry={handleRetryTest}
+                onPracticeIncorrect={handlePracticeIncorrect}
+                onFinish={() => router.back()}
+            />
         );
     }
 
@@ -885,12 +732,15 @@ const styles = StyleSheet.create({
     },
     loadingTitle: {
         fontSize: FontSizes.xl,
-        fontWeight: '700',
+        fontFamily: Fonts.heading,
+        fontWeight: '300',
         color: Colors.text,
         marginTop: Spacing.lg,
+        letterSpacing: -0.3,
     },
     loadingSubtitle: {
         fontSize: FontSizes.md,
+        fontFamily: Fonts.body,
         color: Colors.textLight,
         marginTop: Spacing.sm,
         textAlign: 'center',
@@ -924,12 +774,16 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: FontSizes.lg,
-        fontWeight: '600',
+        fontFamily: Fonts.heading,
+        fontWeight: '300',
         color: Colors.text,
+        letterSpacing: -0.3,
     },
     headerSubtitle: {
-        fontSize: FontSizes.sm,
+        fontSize: FontSizes.xs,
+        fontFamily: Fonts.mono,
         color: Colors.textLight,
+        letterSpacing: 0.5,
     },
     timerBadge: {
         flexDirection: 'row',
@@ -941,6 +795,7 @@ const styles = StyleSheet.create({
     },
     timerText: {
         fontSize: FontSizes.md,
+        fontFamily: Fonts.monoBold,
         fontWeight: '600',
     },
     progressContainer: {
@@ -977,8 +832,10 @@ const styles = StyleSheet.create({
         borderRadius: 3,
     },
     progressText: {
-        fontSize: FontSizes.sm,
+        fontSize: FontSizes.xs,
+        fontFamily: Fonts.mono,
         color: Colors.textLight,
+        letterSpacing: 0.5,
     },
     questionContainer: {
         flex: 1,
@@ -1002,12 +859,16 @@ const styles = StyleSheet.create({
         marginBottom: Spacing.md,
     },
     questionNumberText: {
-        fontSize: FontSizes.sm,
-        fontWeight: '600',
+        fontSize: FontSizes.xs,
+        fontFamily: Fonts.mono,
+        fontWeight: '400',
         color: Colors.primary,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
     },
     questionText: {
         fontSize: FontSizes.lg,
+        fontFamily: Fonts.bodyMedium,
         fontWeight: '500',
         color: Colors.text,
         lineHeight: 28,
@@ -1052,6 +913,7 @@ const styles = StyleSheet.create({
     optionText: {
         flex: 1,
         fontSize: FontSizes.md,
+        fontFamily: Fonts.body,
         color: Colors.text,
     },
     optionTextSelected: {
@@ -1074,9 +936,12 @@ const styles = StyleSheet.create({
         elevation: 8,
     },
     floatingSubmitText: {
-        fontSize: FontSizes.md,
-        fontWeight: '600',
+        fontSize: FontSizes.sm,
+        fontFamily: Fonts.mono,
+        fontWeight: '400',
         color: '#fff',
+        textTransform: 'uppercase',
+        letterSpacing: 1.5,
     },
     navigation: {
         backgroundColor: Colors.surface,
@@ -1116,8 +981,9 @@ const styles = StyleSheet.create({
     },
     questionDotText: {
         fontSize: FontSizes.xs,
+        fontFamily: Fonts.mono,
         color: Colors.textLight,
-        fontWeight: '500',
+        fontWeight: '400',
     },
     questionDotTextActive: {
         color: Colors.primary,
@@ -1144,8 +1010,11 @@ const styles = StyleSheet.create({
         opacity: 0.5,
     },
     navButtonText: {
-        fontSize: FontSizes.md,
+        fontSize: FontSizes.sm,
+        fontFamily: Fonts.mono,
         color: Colors.text,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     navButtonTextDisabled: {
         color: Colors.textMuted,
@@ -1160,9 +1029,12 @@ const styles = StyleSheet.create({
         gap: Spacing.xs,
     },
     nextButtonText: {
-        fontSize: FontSizes.md,
-        fontWeight: '600',
+        fontSize: FontSizes.sm,
+        fontFamily: Fonts.mono,
+        fontWeight: '400',
         color: '#fff',
+        textTransform: 'uppercase',
+        letterSpacing: 1.5,
     },
     submitButton: {
         flexDirection: 'row',
@@ -1174,9 +1046,12 @@ const styles = StyleSheet.create({
         gap: Spacing.xs,
     },
     submitButtonText: {
-        fontSize: FontSizes.md,
-        fontWeight: '600',
+        fontSize: FontSizes.sm,
+        fontFamily: Fonts.mono,
+        fontWeight: '400',
         color: '#fff',
+        textTransform: 'uppercase',
+        letterSpacing: 1.5,
     },
     // Exit Modal
     modalOverlay: {
@@ -1197,9 +1072,11 @@ const styles = StyleSheet.create({
     },
     modalTitle: {
         fontSize: FontSizes.xl,
-        fontWeight: '700',
+        fontFamily: Fonts.heading,
+        fontWeight: '300',
         color: Colors.text,
         marginTop: Spacing.md,
+        letterSpacing: -0.3,
     },
     modalMessage: {
         fontSize: FontSizes.md,
@@ -1223,8 +1100,11 @@ const styles = StyleSheet.create({
     },
     modalCancelText: {
         color: '#fff',
-        fontWeight: '600',
-        fontSize: FontSizes.md,
+        fontFamily: Fonts.mono,
+        fontWeight: '400',
+        fontSize: FontSizes.sm,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
     },
     modalLeaveButton: {
         flex: 1,

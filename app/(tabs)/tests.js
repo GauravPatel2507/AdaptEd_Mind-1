@@ -12,9 +12,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Colors, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
+import { Colors, Fonts, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
 import { SUBJECTS } from '../../constants/Config';
 import { FadeInDown, FadeInUp, ZoomIn } from '../../components/Animations';
+import { SectionDivider } from '../../components/EditorialComponents';
 import { generateAITest } from '../../services/aiService';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../config/firebase';
@@ -159,8 +160,7 @@ export default function TestsScreen() {
             subjectColor: selectedSubject.color,
             questions: JSON.stringify(result.data.questions),
             timeLimit: testConfig.timeLimit,
-            difficulty: result.data.difficulty,
-            numberOfQuestions: testConfig.questions
+            difficulty: result.data.difficulty
           }
         });
       } else {
@@ -212,6 +212,8 @@ export default function TestsScreen() {
           </View>
         </FadeInDown>
 
+        <SectionDivider label="Subjects" />
+
         {/* Create New Test - Module 5 */}
         <FadeInDown delay={200}>
           <View style={styles.sectionHeader}>
@@ -248,6 +250,8 @@ export default function TestsScreen() {
             ))}
           </View>
         </FadeInDown>
+
+        <SectionDivider label="History" />
 
         {/* Test History */}
         <FadeInDown delay={400}>
@@ -455,11 +459,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: FontSizes.xxl,
-    fontWeight: '700',
+    fontFamily: Fonts.heading,
+    fontWeight: '300',
     color: Colors.text,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: FontSizes.md,
+    fontSize: FontSizes.sm,
+    fontFamily: Fonts.body,
     color: Colors.textLight,
     marginTop: 4,
   },
@@ -471,20 +478,25 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.md,
     padding: Spacing.md,
     alignItems: 'center',
-    ...Shadows.sm,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
   },
   statValue: {
     fontSize: FontSizes.xl,
+    fontFamily: Fonts.monoBold,
     fontWeight: '700',
     color: Colors.primary,
   },
   statLabel: {
-    fontSize: FontSizes.xs,
-    color: Colors.textLight,
+    fontSize: 10,
+    fontFamily: Fonts.mono,
+    color: Colors.textMuted,
     marginTop: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -500,32 +512,43 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: FontSizes.lg,
-    fontWeight: '600',
+    fontFamily: Fonts.heading,
+    fontWeight: '300',
     color: Colors.text,
+    letterSpacing: -0.3,
   },
   sectionSubtitle: {
     fontSize: FontSizes.sm,
+    fontFamily: Fonts.body,
     color: Colors.textLight,
     marginBottom: Spacing.md,
   },
   aiBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    backgroundColor: Colors.primary + '10',
     paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
-    borderRadius: BorderRadius.full,
+    borderRadius: BorderRadius.sm,
     gap: 4,
+    borderWidth: 1,
+    borderColor: Colors.primary + '20',
   },
   aiBadgeText: {
-    fontSize: 10,
+    fontSize: 9,
+    fontFamily: Fonts.mono,
     color: Colors.primary,
-    fontWeight: '600',
+    fontWeight: '400',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   seeAllText: {
-    fontSize: FontSizes.sm,
+    fontSize: FontSizes.xs,
+    fontFamily: Fonts.mono,
     color: Colors.primary,
-    fontWeight: '500',
+    fontWeight: '400',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
   },
   subjectGrid: {
     flexDirection: 'row',
@@ -536,11 +559,11 @@ const styles = StyleSheet.create({
   subjectTestCard: {
     width: (width - Spacing.lg * 2 - Spacing.sm * 3) / 4,
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.md,
     padding: Spacing.sm,
     alignItems: 'center',
     borderWidth: 1,
-    ...Shadows.sm,
+    borderColor: Colors.cardBorder,
   },
   subjectTestIcon: {
     width: 44,
@@ -551,19 +574,23 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   subjectTestName: {
-    fontSize: 10,
-    fontWeight: '500',
+    fontSize: 9,
+    fontFamily: Fonts.mono,
+    fontWeight: '400',
     color: Colors.text,
     textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   testHistoryCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.md,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
-    ...Shadows.sm,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
   },
   testHistoryIcon: {
     width: 48,
@@ -578,13 +605,16 @@ const styles = StyleSheet.create({
   },
   testHistorySubject: {
     fontSize: FontSizes.md,
-    fontWeight: '600',
+    fontFamily: Fonts.bodyMedium,
+    fontWeight: '500',
     color: Colors.text,
   },
   testHistoryDate: {
     fontSize: FontSizes.sm,
-    color: Colors.textLight,
+    fontFamily: Fonts.mono,
+    color: Colors.textMuted,
     marginTop: 2,
+    letterSpacing: 0.3,
   },
   testHistoryScore: {
     alignItems: 'flex-end',
@@ -592,19 +622,22 @@ const styles = StyleSheet.create({
   },
   scoreValue: {
     fontSize: FontSizes.lg,
+    fontFamily: Fonts.monoBold,
     fontWeight: '700',
   },
   scoreLabel: {
     fontSize: FontSizes.xs,
-    color: Colors.textLight,
+    fontFamily: Fonts.mono,
+    color: Colors.textMuted,
+    letterSpacing: 0.5,
   },
   insightCard: {
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-    borderRadius: BorderRadius.xl,
+    backgroundColor: Colors.accent + '10',
+    borderRadius: BorderRadius.md,
     padding: Spacing.lg,
     marginTop: Spacing.sm,
     borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.2)',
+    borderColor: Colors.accent + '25',
   },
   insightHeader: {
     flexDirection: 'row',
@@ -613,42 +646,52 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   insightTitle: {
-    fontSize: FontSizes.md,
-    fontWeight: '600',
+    fontSize: FontSizes.sm,
+    fontFamily: Fonts.mono,
+    fontWeight: '400',
     color: Colors.accent,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
   },
   insightText: {
     fontSize: FontSizes.sm,
+    fontFamily: Fonts.body,
     color: Colors.text,
     lineHeight: 22,
   },
   insightHighlight: {
+    fontFamily: Fonts.bodySemiBold,
     fontWeight: '600',
     color: Colors.primary,
   },
   insightButton: {
-    backgroundColor: Colors.accent,
-    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.sm,
     paddingVertical: Spacing.sm,
     alignItems: 'center',
     marginTop: Spacing.md,
   },
   insightButtonText: {
-    fontSize: FontSizes.sm,
-    fontWeight: '600',
+    fontSize: FontSizes.xs,
+    fontFamily: Fonts.mono,
+    fontWeight: '400',
     color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(28, 28, 28, 0.5)',
     justifyContent: 'center',
     padding: Spacing.lg,
   },
   modalContent: {
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.xl,
+    borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     maxHeight: height * 0.8,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -658,8 +701,10 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: FontSizes.xl,
-    fontWeight: '700',
+    fontFamily: Fonts.heading,
+    fontWeight: '300',
     color: Colors.text,
+    letterSpacing: -0.3,
   },
   selectedSubjectBadge: {
     flexDirection: 'row',
@@ -667,22 +712,29 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
+    borderRadius: BorderRadius.sm,
     gap: Spacing.xs,
     marginBottom: Spacing.lg,
+    borderWidth: 1,
   },
   selectedSubjectText: {
-    fontSize: FontSizes.md,
-    fontWeight: '600',
+    fontSize: FontSizes.sm,
+    fontFamily: Fonts.mono,
+    fontWeight: '400',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   configSection: {
     marginBottom: Spacing.lg,
   },
   configLabel: {
-    fontSize: FontSizes.sm,
-    fontWeight: '500',
-    color: Colors.text,
+    fontSize: FontSizes.xs,
+    fontFamily: Fonts.mono,
+    fontWeight: '400',
+    color: Colors.textMuted,
     marginBottom: Spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
   configOptions: {
     flexDirection: 'row',
@@ -692,7 +744,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: Spacing.sm,
     backgroundColor: Colors.background,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.sm,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.cardBorder,
@@ -706,7 +758,8 @@ const styles = StyleSheet.create({
   },
   configOptionText: {
     fontSize: FontSizes.sm,
-    fontWeight: '500',
+    fontFamily: Fonts.mono,
+    fontWeight: '400',
     color: Colors.text,
   },
   configOptionTextActive: {
@@ -717,7 +770,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.primary,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.sm,
     paddingVertical: Spacing.md,
     gap: Spacing.sm,
     marginTop: Spacing.sm,
@@ -726,25 +779,31 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   startTestButtonText: {
-    fontSize: FontSizes.lg,
-    fontWeight: '600',
+    fontSize: FontSizes.sm,
+    fontFamily: Fonts.mono,
+    fontWeight: '400',
     color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
   emptyHistory: {
     alignItems: 'center',
     paddingVertical: Spacing.xl,
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    ...Shadows.sm,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
   },
   emptyHistoryText: {
     fontSize: FontSizes.md,
+    fontFamily: Fonts.bodyMedium,
     fontWeight: '500',
     color: Colors.text,
     marginTop: Spacing.sm,
   },
   emptyHistorySubtext: {
     fontSize: FontSizes.sm,
+    fontFamily: Fonts.body,
     color: Colors.textMuted,
     marginTop: Spacing.xs,
   },

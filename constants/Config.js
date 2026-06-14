@@ -1,10 +1,11 @@
 // App-wide configuration constants
 
-// AI Configuration for Groq (SAFE — uses env variable)
+// AI Configuration — calls go through backend proxy (no API keys on client)
 export const AI_CONFIG = {
-  GROQ_API_KEY: process.env.EXPO_PUBLIC_GROQ_API_KEY || '',
-  GROQ_API_URL: 'https://api.groq.com/openai/v1/chat/completions',
-  GROQ_MODEL: 'llama-3.3-70b-versatile',
+  // Backend API base URL — all AI requests are proxied through the backend
+  BACKEND_API_URL: __DEV__
+    ? 'http://localhost:3001'
+    : 'https://your-production-backend.com', // TODO: Set production URL
 };
 
 export const APP_CONFIG = {

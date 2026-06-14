@@ -13,8 +13,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Colors, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
+import { Colors, Fonts, Spacing, BorderRadius, FontSizes, Shadows } from '../../constants/Colors';
 import { FadeInDown, FadeInUp } from '../../components/Animations';
+import { SectionDivider } from '../../components/EditorialComponents';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../config/firebase';
 import {
@@ -221,6 +222,8 @@ export default function BuddiesScreen() {
                 <Text style={styles.subtitle}>Connect and learn together</Text>
             </View>
 
+            <SectionDivider />
+
             {/* Tab Switcher */}
             <View style={styles.tabContainer}>
                 <TouchableOpacity
@@ -414,11 +417,14 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: FontSizes.xxl,
-        fontWeight: '700',
+        fontFamily: Fonts.heading,
+        fontWeight: '300',
         color: Colors.text,
+        letterSpacing: -0.5,
     },
     subtitle: {
-        fontSize: FontSizes.md,
+        fontSize: FontSizes.sm,
+        fontFamily: Fonts.body,
         color: Colors.textLight,
         marginTop: 4,
     },
@@ -441,14 +447,17 @@ const styles = StyleSheet.create({
         ...Shadows.sm,
     },
     tabActive: {
-        backgroundColor: Colors.primary + '15',
+        backgroundColor: Colors.primary + '10',
         borderWidth: 1,
-        borderColor: Colors.primary + '30',
+        borderColor: Colors.primary + '25',
     },
     tabText: {
-        fontSize: FontSizes.md,
-        fontWeight: '500',
+        fontSize: FontSizes.sm,
+        fontFamily: Fonts.mono,
+        fontWeight: '400',
         color: Colors.textMuted,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
     },
     tabTextActive: {
         color: Colors.primary,
@@ -488,18 +497,21 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontSize: FontSizes.lg,
-        fontWeight: '600',
+        fontFamily: Fonts.heading,
+        fontWeight: '300',
         color: Colors.text,
         marginBottom: Spacing.md,
+        letterSpacing: -0.3,
     },
     conversationCard: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: Colors.surface,
-        borderRadius: BorderRadius.lg,
+        borderRadius: BorderRadius.md,
         padding: Spacing.md,
         marginBottom: Spacing.sm,
-        ...Shadows.sm,
+        borderWidth: 1,
+        borderColor: Colors.cardBorder,
     },
     avatar: {
         width: 50,
@@ -525,34 +537,40 @@ const styles = StyleSheet.create({
     },
     conversationName: {
         fontSize: FontSizes.md,
-        fontWeight: '600',
+        fontFamily: Fonts.bodyMedium,
+        fontWeight: '500',
         color: Colors.text,
         flex: 1,
     },
     conversationTime: {
         fontSize: FontSizes.xs,
+        fontFamily: Fonts.mono,
         color: Colors.textMuted,
         marginLeft: Spacing.sm,
+        letterSpacing: 0.3,
     },
     conversationMessage: {
         fontSize: FontSizes.sm,
+        fontFamily: Fonts.body,
         color: Colors.textLight,
     },
     userCard: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: Colors.surface,
-        borderRadius: BorderRadius.lg,
+        borderRadius: BorderRadius.md,
         padding: Spacing.md,
         marginBottom: Spacing.sm,
-        ...Shadows.sm,
+        borderWidth: 1,
+        borderColor: Colors.cardBorder,
     },
     userContent: {
         flex: 1,
     },
     userName: {
         fontSize: FontSizes.md,
-        fontWeight: '600',
+        fontFamily: Fonts.bodyMedium,
+        fontWeight: '500',
         color: Colors.text,
     },
     userEmail: {
@@ -596,9 +614,12 @@ const styles = StyleSheet.create({
         gap: Spacing.sm,
     },
     discoverButtonText: {
-        fontSize: FontSizes.md,
-        fontWeight: '600',
+        fontSize: FontSizes.sm,
+        fontFamily: Fonts.mono,
+        fontWeight: '400',
         color: '#fff',
+        textTransform: 'uppercase',
+        letterSpacing: 2,
     },
     loadingText: {
         marginTop: Spacing.md,
