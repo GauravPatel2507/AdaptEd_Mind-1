@@ -8,7 +8,7 @@ const { width, height } = Dimensions.get('window');
 const MIN_SPLASH_DURATION = 1500; // 1.5 seconds minimum
 
 export default function SplashScreen() {
-  const { user, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const [minDurationMet, setMinDurationMet] = useState(false);
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -116,6 +116,10 @@ export default function SplashScreen() {
 
   // Redirect based on auth state
   if (user) {
+    // Route teachers to teacher dashboard, students to student dashboard
+    if (userProfile?.role === 'teacher') {
+      return <Redirect href="/(teacher-tabs)/overview" />;
+    }
     return <Redirect href="/(tabs)/dashboard" />;
   }
 

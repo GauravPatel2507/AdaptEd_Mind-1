@@ -71,7 +71,7 @@ export default function RegisterScreen() {
     setIsLoading(false);
     
     if (result.success) {
-      router.replace('/(tabs)/dashboard');
+      router.replace(role === 'teacher' ? '/(teacher-tabs)/overview' : '/(tabs)/dashboard');
     } else {
       Alert.alert('Registration Failed', result.error);
     }

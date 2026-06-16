@@ -17,6 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { Colors, Spacing, BorderRadius, FontSizes } from '../../constants/Colors';
 import { FadeInDown, FadeInUp } from '../../components/Animations';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 
 const { width, height } = Dimensions.get('window');
 
@@ -58,7 +60,14 @@ export default function LoginScreen() {
     setIsLoading(false);
     
     if (result.success) {
-      router.replace('/(tabs)/dashboard');
+      // Fetch profile to determine role-based routing
+      try {
+        const profileDoc = await getDoc(doc(db, 'users', result.user.uid));
+        const role = profileDoc.exists() ? profileDoc.data().role : 'student';
+        router.replace(role === 'teacher' ? '/(teacher-tabs)/overview' : '/(tabs)/dashboard');
+      } catch (e) {
+        router.replace('/(tabs)/dashboard');
+      }
     } else {
       Alert.alert('Login Failed', result.error);
     }

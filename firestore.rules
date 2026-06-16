@@ -15,6 +15,11 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    function isTeacher() {
+      return isAuthenticated()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+
     function isValidString(field, minLen, maxLen) {
       return field is string && field.size() >= minLen && field.size() <= maxLen;
     }
@@ -31,7 +36,8 @@ service cloud.firestore {
     // ── Quiz Results (Test Attempts) ───────────────────────────────
     // Users can read their own results, create new ones, but never modify/delete
     match /quizResults/{resultId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated()
+        && (resource.data.userId == request.auth.uid || isTeacher());
       allow create: if isAuthenticated()
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.score is number
